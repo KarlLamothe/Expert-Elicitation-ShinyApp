@@ -71,7 +71,7 @@ summarize_question_pert <- function(df,
     )
   
   # Degree of Belief weights:
-  # If a DoB column is provided, parse it (0–100 scale).
+  # If a DoB column is provided, parse it (50–100 scale).
   # When DoB is not provided or is missing, full confidence (100) is assumed,
   # interpreting absence as acceptance of stated choices rather than uncertainty.
   if (!is.null(dob_col) && dob_col %in% names(df)) {
