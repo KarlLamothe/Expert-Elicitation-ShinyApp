@@ -9,9 +9,7 @@ server <- function(input, output, session) {
       demo_df
     } else {
       df <- suppressMessages(
-        read_csv(input$file$datapath,
-                 show_col_types = FALSE,
-                 name_repair = "minimal")
+        read_csv(input$file$datapath, show_col_types = FALSE, name_repair = "minimal")
       )
     }
   })
@@ -19,7 +17,7 @@ server <- function(input, output, session) {
   # Column mapping UI
   output$colmap_ui <- renderUI({
     req(raw_df())
-    df <- raw_df()
+    df   <- raw_df()
     cols <- names(df)
     default_question <- best_question_col(df)
     
@@ -33,8 +31,12 @@ server <- function(input, output, session) {
       selectInput("col_bgp", "Best guess (BGP)", choices = cols,
                   selected = grep("Best|BGP", cols, ignore.case = TRUE, value = TRUE)[1]),
       selectInput("col_hpp", "Highest plausible (HPP)", choices = cols,
-                  selected = grep("Highest|HPP", cols, ignore.case = TRUE, value = TRUE)[1])
-      
+                  selected = grep("Highest|HPP", cols, ignore.case = TRUE, value = TRUE)[1]),
+      selectInput("col_dob", "Degree of Belief (DoB; optional)", choices = c("<none>", cols),
+                  selected = {
+                    hit <- grep("Belief|DoB", cols, ignore.case = TRUE, value = TRUE)
+                    if (length(hit) > 0) hit[1] else "<none>"
+                  })
     )
   })
   
@@ -69,51 +71,63 @@ server <- function(input, output, session) {
     
     qs <- unique(df[[q_col]])
     
-    # Summarize per selected questions (random seed each run)
+    # Summarize pre-selected questions (random seed each run)
     res_list <- lapply(qs, function(q) {
       df_q <- df %>% filter(.data[[q_col]] == q)
+      dob_col_val <- if (!is.null(input$col_dob) && !identical(input$col_dob, "<none>"))
+        input$col_dob else NULL
       summarize_question_pert(
         df_q,
         id_col  = input$col_id,
         lpp_col = input$col_lpp,
         bgp_col = input$col_bgp,
         hpp_col = input$col_hpp,
+        dob_col = dob_col_val,
         lambda  = input$lambda,
         Nsim    = input$Nsim,
-        seed    = NULL,                # random seed inside
+        seed    = NULL,
         question_label = as.character(q)
       )
     })
     names(res_list) <- as.character(qs)
     
     # Bind everything
-    summary_all  <- bind_rows(lapply(res_list, `[[`, "summary"))
-    dens_mix_all <- bind_rows(lapply(res_list, function(r) r$facet$mixture))
-    dens_ind_all <- bind_rows(lapply(res_list, function(r) r$facet$individual))
-    beta_all     <- bind_rows(lapply(res_list, function(r) r$facet$beta))
+    summary_all    <- bind_rows(lapply(res_list, `[[`, "summary"))
+    dens_mix_all   <- bind_rows(lapply(res_list, function(r) r$facet$mixture))
+    dens_mix_w_all <- bind_rows(lapply(res_list, function(r) r$facet$mixture_w))
+    dens_ind_all   <- bind_rows(lapply(res_list, function(r) r$facet$individual))
+    beta_all       <- bind_rows(lapply(res_list, function(r) r$facet$beta))
+    beta_w_all     <- bind_rows(lapply(res_list, function(r) r$facet$beta_w))
     
-    cdf_mix_all  <- bind_rows(lapply(res_list, function(r) r$facet$cdf_mixture))
-    cdf_emp_all  <- bind_rows(lapply(res_list, function(r) r$facet$cdf_emp))
-    cdf_beta_all <- bind_rows(lapply(res_list, function(r) r$facet$cdf_beta))
-    cdf_ind_all  <- bind_rows(lapply(res_list, function(r) r$facet$cdf_individual))
+    cdf_mix_all    <- bind_rows(lapply(res_list, function(r) r$facet$cdf_mixture))
+    cdf_mix_w_all  <- bind_rows(lapply(res_list, function(r) r$facet$cdf_mixture_w))
+    cdf_emp_all    <- bind_rows(lapply(res_list, function(r) r$facet$cdf_emp))
+    cdf_emp_w_all  <- bind_rows(lapply(res_list, function(r) r$facet$cdf_emp_w))
+    cdf_beta_all   <- bind_rows(lapply(res_list, function(r) r$facet$cdf_beta))
+    cdf_beta_w_all <- bind_rows(lapply(res_list, function(r) r$facet$cdf_beta_w))
+    cdf_ind_all    <- bind_rows(lapply(res_list, function(r) r$facet$cdf_individual))
     
     samples_all  <- bind_rows(lapply(names(res_list), function(nm) {
       tibble(Question = nm, samples = res_list[[nm]]$samples)
     }))
     
     list(
-      summaries     = summary_all,
-      dens_mix_all  = dens_mix_all,
-      dens_ind_all  = dens_ind_all,
-      beta_all      = beta_all,
-      cdf_mix_all   = cdf_mix_all,
-      cdf_emp_all   = cdf_emp_all,
-      cdf_beta_all  = cdf_beta_all,
-      cdf_ind_all   = cdf_ind_all,
-      samples_all   = samples_all
+      summaries      = summary_all,
+      dens_mix_all   = dens_mix_all,
+      dens_mix_w_all = dens_mix_w_all,
+      dens_ind_all   = dens_ind_all,
+      beta_all       = beta_all,
+      beta_w_all     = beta_w_all,
+      cdf_mix_all    = cdf_mix_all,
+      cdf_mix_w_all  = cdf_mix_w_all,
+      cdf_emp_all    = cdf_emp_all,
+      cdf_emp_w_all  = cdf_emp_w_all,
+      cdf_beta_all   = cdf_beta_all,
+      cdf_beta_w_all = cdf_beta_w_all,
+      cdf_ind_all    = cdf_ind_all,
+      samples_all    = samples_all
     )
   }, ignoreInit = TRUE)
-  
   
   ###########################################################################
   # Single PNG downloads (use current selections in results()) 
@@ -149,7 +163,7 @@ server <- function(input, output, session) {
         )
       
       df_long <- dfp %>%
-        pivot_longer(
+        tidyr::pivot_longer(
           cols = c(Lowest_Plausible_Pr, Best_Guess_Pr, Highest_Plausible_Pr),
           names_to = "Measure", values_to = "Value"
         )
@@ -161,7 +175,7 @@ server <- function(input, output, session) {
                                        ymax = Highest_Plausible_Pr), lwd = 0.5) +
         geom_point(data = df_long, aes(x = Participant, y = Value), size = 1) +
         labs(x = "Participant", y = "Probability") + ylim(0,1) +
-        facet_wrap(~Question, scales = "fixed") + theme_export +
+        facet_wrap(~ Question, scales = "fixed") + theme_export +
         theme(axis.text.y = element_blank(), axis.ticks.y = element_blank())
       
       ggsave(file, g, width = 8, height = 4, dpi = 1200, units='in', limitsize = FALSE)
@@ -173,9 +187,12 @@ server <- function(input, output, session) {
     content = function(file) {
       req(results())
       r <- results()
+      # use the same number of columns you show in the app; adjust if you added input$facet_cols
       facet_cols <- if (!is.null(input$facet_cols)) input$facet_cols else 4
       g <- build_density_plot(r, 
-                              show_individual = isTRUE(input$show_individual), 
+                              show_individual = isTRUE(input$show_individual),
+                              show_beta       = isTRUE(input$show_beta),
+                              show_dob_mix    = isTRUE(input$show_dob_mix),
                               facet_cols = facet_cols)
       g_small <- g + theme_export  # <-- apply smaller export theme
       ggsave(file, g_small, width = 8, height = 4, dpi = 1200, units='in', limitsize = FALSE)
@@ -188,8 +205,11 @@ server <- function(input, output, session) {
       req(results())
       r <- results()
       facet_cols <- if (!is.null(input$facet_cols)) input$facet_cols else 4
-      g <- build_hist_plot(r, facet_cols = facet_cols)
-      g_small <- g + theme_export  # smaller export theme
+      g <- build_hist_plot(r,
+                           show_beta    = isTRUE(input$show_beta),
+                           show_dob_mix = isTRUE(input$show_dob_mix),
+                           facet_cols = facet_cols)
+      g_small <- g + theme_export  # <-- apply smaller export theme
       ggsave(file, g_small, width = 8, height = 4, dpi = 1200, units='in', limitsize = FALSE)
     }
   )
@@ -200,9 +220,11 @@ server <- function(input, output, session) {
       req(results())
       r <- results()
       facet_cols <- if (!is.null(input$facet_cols)) input$facet_cols else 4
-      g <- build_cdf_plot(r, show_individual = isTRUE(input$show_individual), 
+      g <- build_cdf_plot(r, show_individual = isTRUE(input$show_individual),
+                          show_beta    = isTRUE(input$show_beta),
+                          show_dob_mix = isTRUE(input$show_dob_mix),
                           facet_cols = facet_cols)
-      g_small <- g + theme_export  # smaller export theme
+      g_small <- g + theme_export  # <-- apply smaller export theme
       ggsave(file, g_small, width = 8, height = 4, dpi = 1200, units='in', limitsize = FALSE)
     }
   )
@@ -216,14 +238,21 @@ server <- function(input, output, session) {
       req(results())
       r <- results()
       
-      # facet columns
-      facet_cols <- if (!is.null(input$facet_cols)) input$facet_cols else 4
-      show_ind   <- isTRUE(input$show_individual)
+      # facet columns if you have that input; otherwise set a default
+      facet_cols   <- if (!is.null(input$facet_cols)) input$facet_cols else 4
+      show_ind     <- isTRUE(input$show_individual)
+      show_beta    <- isTRUE(input$show_beta)
+      show_dob_mix <- isTRUE(input$show_dob_mix)
       
-      # Build plots
-      g1 <- build_density_plot(r, show_individual = show_ind, facet_cols = facet_cols)
-      g2 <- build_hist_plot(r, facet_cols = facet_cols)
-      g3 <- build_cdf_plot(r, show_individual = show_ind, facet_cols = facet_cols)
+      # Build plots (respecting current toggle states)
+      g1 <- build_density_plot(r, show_individual = show_ind,
+                               show_beta = show_beta, show_dob_mix = show_dob_mix,
+                               facet_cols = facet_cols)
+      g2 <- build_hist_plot(r, show_beta = show_beta, show_dob_mix = show_dob_mix,
+                            facet_cols = facet_cols)
+      g3 <- build_cdf_plot(r, show_individual = show_ind,
+                           show_beta = show_beta, show_dob_mix = show_dob_mix,
+                           facet_cols = facet_cols)
       g4 <- build_individuals_plot(
         df_raw            = raw_df(),
         id_col            = input$col_id,
@@ -250,11 +279,11 @@ server <- function(input, output, session) {
       ggsave(f3, g3, width = 8, height = 4, dpi = 1200, units = 'in', limitsize = FALSE)
       ggsave(f4, g4, width = 8, height = 4, dpi = 1200, units = 'in', limitsize = FALSE)
       
-      # summary CSV
+      # Write the summary CSV
       f_summary_csv <- file.path(outdir, paste0("summary_", Sys.Date(), ".csv"))
       write_csv(r$summaries, f_summary_csv)
       
-      # Zip
+      # Zip them up
       oldwd <- setwd(outdir); on.exit(setwd(oldwd), add = TRUE)
       zip(zipfile = file, files = basename(c(f1, f2, f3, f4,f_summary_csv)))
     }
@@ -271,39 +300,45 @@ server <- function(input, output, session) {
       hpp_col = input$col_hpp,
       question_col = input$col_question,
       selected_questions = input$question_multi,
-      facet_cols = NULL  
+      facet_cols = NULL   # ✅ adaptive
     )
   })
   
-  # Mixture density
+  # Plots: Mixture density (faceted by full label)
   output$plot_density <- renderPlot({
     req(results())
     
     build_density_plot(
       r = results(),
       show_individual = isTRUE(input$show_individual),
-      facet_cols = NULL   
+      show_beta       = isTRUE(input$show_beta),
+      show_dob_mix    = isTRUE(input$show_dob_mix),
+      facet_cols      = NULL   # ✅ adaptive
     )
   })
   
-  # Histogram + Beta fit
+  # Plots: Histogram + Beta fit (faceted by full label)
   output$plot_hist <- renderPlot({
     req(results())
     
     build_hist_plot(
       r = results(),
-      facet_cols = NULL   
+      show_beta       = isTRUE(input$show_beta),
+      show_dob_mix    = isTRUE(input$show_dob_mix),
+      facet_cols      = NULL
     )
   })
   
-  # CDF comparison 
+  # Plots: CDF comparison (faceted by full label)
   output$plot_cdf <- renderPlot({
     req(results())
     
     build_cdf_plot(
       r = results(),
       show_individual = isTRUE(input$show_individual),
-      facet_cols = NULL   
+      show_beta       = isTRUE(input$show_beta),
+      show_dob_mix    = isTRUE(input$show_dob_mix),
+      facet_cols      = NULL
     )
   })
   
