@@ -13,9 +13,11 @@ ui <- fluidPage(
       numericInput("Nsim", "Mixture draws", value = 10000, min = 1000, step = 1000),
       uiOutput("question_filter_ui"),  # multi-select
       checkboxInput("show_individual", "Show individual curves in overlays", TRUE),
+      checkboxInput("show_beta",       "Show Beta fit overlay", TRUE),
+      checkboxInput("show_dob_mix",    "Show DoB-weighted mixture overlay", TRUE),
       actionButton("run", "Run / Refresh", class = "btn-primary"),
       tags$hr(),
-      downloadButton("download_summary", "Download Summary CSV"),
+      downloadButton("download_summary", "Download Summary (CSV)"),
       tags$hr(),
       h4("Download plots"),
       downloadButton("download_participants_png",  "Expert Scores (PNG)"),
@@ -33,8 +35,9 @@ ui <- fluidPage(
         tabPanel("CDF Comparisons", plotOutput("plot_cdf", height = "600px")),
         tabPanel("Summary Table", div(style = "font-size: 20px;", 
                                       tableOutput("summary_table")),
-                 helpText("Summaries are for the equal-weight mixture of participant PERT distributions (hard bounds with mode at BGP)."))
+                 helpText("EqW = equal-weight mixture; DoB = Degree-of-Belief weighted mixture. Missing DoB values default to the group mean."))
       )
     )
   )
 )
+
