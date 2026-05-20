@@ -107,3 +107,66 @@ build_cdf_plot <- function(r,
   
   p
 }
+
+
+build_individuals_plot <- function(df_raw,
+                                   id_col, lpp_col, bgp_col, hpp_col,
+                                   question_col = NULL,
+                                   selected_questions = NULL,
+                                   use_export_theme = FALSE,
+                                   theme_export = NULL, 
+                                   facet_cols = 4) {
+  # Ensure we have a Question column (or synthesize one)
+  has_q <- !is.null(question_col) && !identical(question_col, "<none>")
+  if (!has_q) {
+    q_col <- "__Question__"
+    df <- df_raw %>% mutate(`__Question__` = "Q1")
+  } else {
+    q_col <- question_col
+    df <- df_raw
+  }
+  
+  # Filter to the selected subset of questions (if provided)
+  if (!is.null(selected_questions) && length(selected_questions) > 0) {
+    # When app has an "All" option, remove it before filtering
+    sel <- setdiff(selected_questions, "All")
+    if (length(sel) > 0) {
+      df <- df %>% filter(.data[[q_col]] %in% sel)
+    }
+  }
+  
+  # Build plotting frame using raw (unfixed) values
+  dfp <- df %>%
+    transmute(
+      Question             = .data[[q_col]],
+      Participant          = as.character(.data[[id_col]]),
+      Lowest_Plausible_Pr  = suppressWarnings(as.numeric(.data[[lpp_col]])),
+      Best_Guess_Pr        = suppressWarnings(as.numeric(.data[[bgp_col]])),
+      Highest_Plausible_Pr = suppressWarnings(as.numeric(.data[[hpp_col]]))
+    )
+  
+  # Long form for 3 raw points (LPP, BGP, HPP)
+  df_long <- dfp %>%
+    pivot_longer(
+      cols = c(Lowest_Plausible_Pr, Best_Guess_Pr, Highest_Plausible_Pr),
+      names_to = "Measure", values_to = "Value"
+    )
+  
+  g <- ggplot() +
+    geom_linerange(data = dfp, aes(x = Participant, 
+                                   ymin = Lowest_Plausible_Pr, 
+                                   ymax = Highest_Plausible_Pr),lwd = 0.5) +
+    geom_point(data = df_long, aes(x = Participant, y = Value), size = 1) +
+    coord_flip() + ylim(0,1)+
+    labs(x = "Participant", y = "Probability") +
+    facet_wrap(~ Question, ncol = facet_cols, scales = "fixed")+
+    theme(axis.text.y = element_blank(), 
+          axis.ticks.y = element_blank())
+  
+  # If you defined a smaller export theme and asked to use it, apply it
+  if (isTRUE(use_export_theme) && !is.null(theme_export)) {
+    g <- g + theme_export + theme(axis.text.y = element_blank(), 
+                                  axis.ticks.y = element_blank())
+  }
+  g
+}
