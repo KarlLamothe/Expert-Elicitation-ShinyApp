@@ -22,9 +22,9 @@ For each expert, the lowest plausible estimate (`a`), best-guess estimate (`m`),
 
 The Beta shape parameters are calculated as:
 
-\[
+$$
 \alpha = 1 + \lambda \frac{m-a}{b-a}
-\]
+$$
 
 and
 
