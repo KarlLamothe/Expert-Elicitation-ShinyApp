@@ -22,15 +22,15 @@ For each expert, the lowest plausible estimate (`a`), best-guess estimate (`m`),
 
 The Beta shape parameters are calculated as:
 
-$$
+```math
 \alpha = 1 + \lambda \frac{m-a}{b-a}
-$$
+```
 
 and
 
-$$
+```math
 \beta = 1 + \lambda \frac{b-m}{b-a}
-$$
+```
 
 where the default value of the PERT shape parameter is $\lambda = 4$. 
 
@@ -44,18 +44,18 @@ Version 2 retains the equal-weight linear opinion pool implemented in Version 1.
 
 If there are $n$ experts, each expert receives equal weight:
 
-$$
+```math
 w_i = \frac{1}{n}
-$$
+```
 
 The pooled probability density is therefore:
 
-$$
+```math
 f_{\mathrm{equal}}(x)
 =
 \frac{1}{n}
 \sum_{i=1}^{n} f_i(x)
-$$
+```
 
 where $f_i(x)$ is the PERT probability density for expert $i$.
 
@@ -67,21 +67,19 @@ For the Degree-of-Belief-weighted pool, each expert's reported Degree of Belief 
 
 For expert \(i\), the normalized weight is:
 
-$$
+```math
 w_i =
 \frac{\mathrm{DoB}_i}
 {\sum_{j=1}^{n} \mathrm{DoB}_j}
-$$
+```
 
 The Degree-of-Belief-weighted pooled density is then:
 
-$$
-\mathrm{DoB\ Effect}
+```math
+f_{\mathrm{DoB}}(x)
 =
-\mathrm{Mean}_{\mathrm{DoB}}
--
-\mathrm{Mean}_{\mathrm{Equal}}
-$$
+\sum_{i=1}^{n} w_i f_i(x)
+```
 
 Consequently, experts reporting higher Degree of Belief contribute more strongly to the pooled distribution than experts reporting lower Degree of Belief.
 
@@ -141,10 +139,13 @@ For each distribution, the application calculates:
 
 The application also calculates a `DoB_Effect`:
 
-$$
-DoB\ Effect =
-Mean_{\mathrm{DoB}} - Mean_{\mathrm{Equal}}
-$$
+```math
+\mathrm{DoB\ Effect}
+=
+\mathrm{Mean}_{\mathrm{DoB}}
+-
+\mathrm{Mean}_{\mathrm{Equal}}
+```
 
 A positive value indicates that incorporating Degree of Belief shifts the pooled mean upward, while a negative value indicates a downward shift.
 
