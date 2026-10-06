@@ -8,7 +8,9 @@ This repository contains two versions of the application. The original version p
 
 ### Version 1: Base Expert Elicitation Model
 
-`App Version 1` contains the original implementation of the expert elicitation application from Lamothe (2026).
+`App Version 1` contains the original implementation of the expert elicitation application from Lamothe (2026):
+
+Lamothe, K.A. 2026. Implementing a Three-step Expert-elicitation Approach to Inform Ecological Decision-making. Can. Manuscr. Rep. Fish. Aquat. Sci. 3333: vii + 33 p. https://doi.org/10.60825/b7sr-pv60
 
 The application provides tools for:
 
@@ -82,6 +84,6 @@ Current development is focused on Version 2.
 
 Changes to the application are tracked using Git, allowing previous implementations of the model to remain available while updates to the current version are documented through the repository's commit history.
 
-## Author
+## Contact
 
-**Karl Lamothe**
+**Karl Lamothe**: karl.lamothe@dfo-mpo.gc.ca
