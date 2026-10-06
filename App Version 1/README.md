@@ -73,8 +73,9 @@ To run the application locally:
 The demonstration data included in the `Data` directory can be used to explore the application and its outputs.
  
 ## Version Status
- 
+
 Version 1 represents the original implementation of the expert-elicitation framework and is retained in this repository for reproducibility and comparison with subsequent versions. It can be cited as:
+
 Lamothe, K.A. 2026. Implementing a Three-step Expert-elicitation Approach to Inform Ecological Decision-making. Can. Manuscr. Rep. Fish. Aquat. Sci. 3333: vii + 33 p. https://doi.org/10.60825/b7sr-pv60
- 
+
 Active development of the application occurs in **App Version 2**, which extends the elicitation framework to incorporate expert Degree of Belief.
