@@ -123,6 +123,8 @@ If a Degree of Belief value is missing, or if no Degree of Belief column is supp
 
 This implementation treats the absence of a Degree of Belief value as full acceptance of the expert's stated elicitation choices rather than interpreting a missing value as additional uncertainty.
 
+If all participants report a Degree of Belief of zero for a question, a Degree-of-Belief-weighted distribution cannot be calculated because no relative weights can be assigned. In this case, the equal-weight results remain available, while DoB-weighted summaries are reported as unavailable.
+
 ## Comparing Equal-Weight and DoB-Weighted Results
 
 The application calculates both aggregation approaches for each question:

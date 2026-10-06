@@ -1,12 +1,12 @@
 source("Functions and Helpers/Packages-Themes.R")
 source("Functions and Helpers/Helper-function.R")
-source("Functions and Helpers/Summarize-Pert-DOB.R")
-source("Functions and Helpers/Plotting-functions-DOB.R")
+source("Functions and Helpers/Summarize-Pert.R")
+source("Functions and Helpers/Plotting-functions.R")
 source("Data/demo_data.R")
 
-gs4_auth(email = "fish.rule.forever12@gmail.com")
+gs4_auth(email = "XXXXXX")
 
-source("App-UI-DOB.R")
-source("App-Server-DOB.R")
+source("App-UI.R")
+source("App-Server.R")
 
 shinyApp(ui, server)

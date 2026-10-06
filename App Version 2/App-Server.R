@@ -157,6 +157,30 @@ server <- function(input, output, session) {
     })
     names(res_list) <- as.character(qs)
     
+    # Identify questions for which DoB weighting is unavailable
+    dob_unavailable <- vapply(
+      res_list,
+      function(x) !isTRUE(x$dob_available),
+      logical(1)
+    )
+    
+    if (any(dob_unavailable)) {
+      
+      affected_questions <- names(res_list)[dob_unavailable]
+      
+      showNotification(
+        paste0(
+          "DoB-weighted results are unavailable for question",
+          if (length(affected_questions) > 1) "s " else " ",
+          paste(affected_questions, collapse = ", "),
+          " because all participants reported a Degree of Belief of 0. ",
+          "Equal-weight results remain available."
+        ),
+        type = "warning",
+        duration = 10
+      )
+    }
+    
     # Bind everything
     summary_all    <- bind_rows(lapply(res_list, `[[`, "summary"))
     dens_mix_all   <- bind_rows(lapply(res_list, function(r) r$facet$mixture))
