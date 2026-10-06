@@ -1,5 +1,87 @@
-# Implementing an Expert-elicitation Approach to Inform Ecological Decision-making
+# Expert Elicitation Shiny App
 
-I developed a shinyApp for use during expert-elicitation meetings. Version 1.0 is published in a Canadian Manuscript Report (abstract below) and within the Main branch here. Version 2.0 is in development to incorporate a four-step elicitation process and other features.
+An R Shiny application developed to support structured expert elicitation by summarizing, aggregating, and visualizing expert judgments.
 
-Fisheries and Oceans Canada routinely makes ecological management decisions under uncertainty. In many cases, incomplete monitoring and limited quantitative data constrain their ability to fully assess potential risks and outcomes of management decisions. While quantitative models and empirical data remain central to scientific advice, qualitative evidence, particularly expert judgement, can be critical for supporting defensible decisions. Structured expert-elicitation methods provide transparent and reproducible frameworks to formally incorporate expert judgement into decision‑making while minimizing bias and explicitly representing uncertainty. This report describes a modified Delphi‑based expert‑elicitation approach developed for decision‑support contexts. The approach combines a three‑step probabilistic elicitation format, in which experts provide lowest plausible, best‑guess, and highest plausible probability estimates, with structured aggregation of individual judgements using PERT distributions and an equal‑weight linear opinion pool. This pooling approach retains disagreement among experts rather than forcing consensus and yields group‑level probability distributions suitable for risk assessment and scenario evaluation. To support implementation and interpretation, a custom R Shiny application was developed to aggregate expert responses, generate visualizations, and summarize pooled uncertainty. Although initially applied to conservation translocation feasibility assessments, the Shiny application is broadly applicable across environmental management scenarios requiring timely decisions under uncertainty and limited data. 
+This repository contains two versions of the application. The original version provides the base expert elicitation framework, while the updated version extends the framework by incorporating expert **Degree of Belief (DoB)** into the aggregation of expert responses.
+
+## Application Versions
+
+### Version 1: Base Expert Elicitation Model
+
+`App Version 1` contains the original implementation of the expert elicitation application from Lamothe (2026).
+
+The application provides tools for:
+
+- collecting and processing expert estimates;
+- summarizing individual expert responses;
+- aggregating responses across experts; and
+- visualizing individual and aggregated expert judgments.
+
+This version is retained to preserve the original implementation of the elicitation framework and allow results to be reproduced using the base model.
+
+---
+
+### Version 2: Degree of Belief Model
+
+`App Version 2` contains the updated implementation of the application.
+
+This version extends the base model by incorporating expert **Degree of Belief (DoB)** into the elicitation framework. Degree of Belief provides additional information about the confidence experts place in their own estimates and can be incorporated into the aggregation and interpretation of expert responses.
+
+This is the **current version under active development**.
+
+## Repository Structure
+
+```text
+Expert-Elicitation-ShinyApp/
+│
+├── App Version 1/
+│   ├── App/
+│   ├── Data/
+│   └── Functions and Helpers/
+│
+├── App Version 2/
+│   ├── App-Server.R
+│   ├── App-UI.R
+│   ├── Run-Application.R
+│   ├── Data/
+│   ├── Functions and Helpers/
+│   └── README.md
+│
+└── README.md
+```
+
+## Running the Application
+
+The applications are written in R using the Shiny framework.
+
+To run a version of the application:
+
+1. Clone or download this repository.
+2. Open the desired application version in R or RStudio.
+3. Install any required R packages that are not already installed.
+4. Run the corresponding `Run-Application.R` script.
+
+For the current application:
+
+```r
+source("Run-Application.R")
+```
+
+Additional information about model-specific requirements and use is provided within the README for each application version.
+
+## Version Overview
+
+| Version | Description | Status |
+|---------|-------------|--------|
+| Version 1 | Base expert elicitation model | Archived |
+| Version 2 | Expert elicitation model incorporating Degree of Belief | Active development |
+
+## Development
+
+Current development is focused on Version 2.
+
+Changes to the application are tracked using Git, allowing previous implementations of the model to remain available while updates to the current version are documented through the repository's commit history.
+
+## Author
+
+**Karl Lamothe**
