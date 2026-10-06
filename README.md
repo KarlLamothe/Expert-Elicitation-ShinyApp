@@ -69,8 +69,6 @@ The application provides Question × Round visualizations and summarizes changes
 
 Multi-round analysis is optional. Version 2 continues to support single-round datasets, including datasets without a Round variable.
 
-See ./App%20Version%202 for detailed methodological and application documentation.
-
 ## Repository Structure
 
 ```text
