@@ -13,7 +13,9 @@ This repository contains two versions of the application:
 
 ### Version 1: Base Expert Elicitation Model
 
-`App Version 1` contains the original implementation of the expert elicitation application.
+`App Version 1` contains the original implementation of the expert elicitation application from Lamothe (2026):
+
+Lamothe, K.A. 2026. Implementing a Three-step Expert-elicitation Approach to Inform Ecological Decision-making. Can. Manuscr. Rep. Fish. Aquat. Sci. 3333: vii + 33 p. https://doi.org/10.60825/b7sr-pv60
 
 Experts provide three probability estimates for each question:
 
