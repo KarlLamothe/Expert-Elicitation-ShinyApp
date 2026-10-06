@@ -38,12 +38,43 @@ Although the approach was initially developed for conservation translocation fea
 ## Repository Structure
 
 Version 1 is organized into three primary directories:
-
+ 
 ```text
-Expert-Elicitation-ShinyApp/
+App Version 1/
 │
-├── App Version 1/
-    ├── App/
-    ├── Data/
-    └── Functions and Helpers/
+├── App/
+│ ├── App-UI.R
+│ ├── App-Server.R
+│ └── Run-Application.R
+│
+├── Data/
+│ └── demo_data.R
+│
+├── Functions and Helpers/
+│ ├── Helper-function.R
+│ ├── Packages-Themes.R
+│ ├── Plotting-functions.R
+│ └── Summarize-Pert.R
+│
+└── README.md
 ```
+ 
+The `App` directory contains the Shiny application and scripts used to launch the application. The `Data` directory contains demonstration data, while `Functions and Helpers` contains supporting functions used for data processing, calculation, plotting, and application formatting.
+ 
+## Running Version 1
+ 
+To run the application locally:
+ 
+1. Clone or download the repository.
+2. Open the Version 1 application directory in R or RStudio.
+3. Ensure that the required R packages are installed.
+4. Run `Run-Application.R`.
+ 
+The demonstration data included in the `Data` directory can be used to explore the application and its outputs.
+ 
+## Version Status
+ 
+Version 1 represents the original implementation of the expert-elicitation framework and is retained in this repository for reproducibility and comparison with subsequent versions. It can be cited as:
+Lamothe, K.A. 2026. Implementing a Three-step Expert-elicitation Approach to Inform Ecological Decision-making. Can. Manuscr. Rep. Fish. Aquat. Sci. 3333: vii + 33 p. https://doi.org/10.60825/b7sr-pv60
+ 
+Active development of the application occurs in **App Version 2**, which extends the elicitation framework to incorporate expert Degree of Belief.
