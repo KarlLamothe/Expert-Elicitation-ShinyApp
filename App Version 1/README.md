@@ -38,3 +38,12 @@ Although the approach was initially developed for conservation translocation fea
 ## Repository Structure
 
 Version 1 is organized into three primary directories:
+
+```text
+Expert-Elicitation-ShinyApp/
+│
+├── App Version 1/
+│   ├── App/
+│   ├── Data/
+│   └── Functions and Helpers/
+```
