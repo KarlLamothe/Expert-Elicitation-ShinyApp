@@ -43,7 +43,7 @@ Version 1 is organized into three primary directories:
 Expert-Elicitation-ShinyApp/
 │
 ├── App Version 1/
-│   ├── App/
-│   ├── Data/
-│   └── Functions and Helpers/
+    ├── App/
+    ├── Data/
+    └── Functions and Helpers/
 ```
