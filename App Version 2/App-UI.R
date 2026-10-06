@@ -12,9 +12,6 @@ ui <- fluidPage(
       actionButton("refresh_sheet","Get Latest Expert Responses",
                    class = "btn-success"),
       br(), br(),
-      # column mapping
-      uiOutput("colmap_ui"),
-      tags$hr(),
       
       # ============================================================
       # QUESTIONS
@@ -106,6 +103,7 @@ ui <- fluidPage(
           helpText(
             "Cumulative distribution functions for the pooled expert judgments."),
           plotOutput("plot_cdf",height = "600px")),
+        
         tabPanel( "Summary",
           br(),
           h3("Elicitation Summary"),
@@ -116,11 +114,57 @@ ui <- fluidPage(
           br(),
           uiOutput("summary_dashboard"),
           tags$hr(),
+          h4("Round Comparison"),
+          
+          helpText(
+            "Changes in pooled estimates and confidence between Round 1 and Round 2."
+          ),
+          
+          tableOutput("round_comparison_table"),
+          
+          tags$hr(),
           h4("Detailed Results"),
           
           div(
             style = "font-size: 15px;",
-            tableOutput("summary_table")))
+            tableOutput("summary_table")),
+          
+          tags$hr(),
+          
+          h4("Definitions"),
+          
+          tags$ul(
+            tags$li(
+              tags$b("Equal-weight mean: "),
+              "Pooled estimate when all experts contribute equally."
+            ),
+            
+            tags$li(
+              tags$b("DoB-weighted mean: "),
+              "Pooled estimate after weighting experts according to their reported Degree of Belief."
+            ),
+            
+            tags$li(
+              tags$b("Average Degree of Belief: "),
+              "Mean Degree of Belief reported by experts."
+            ),
+            
+            tags$li(
+              tags$b("Δ Equal-weight mean: "),
+              "Round 2 minus Round 1 equal-weight pooled estimate."
+            ),
+            
+            tags$li(
+              tags$b("Δ DoB-weighted mean: "),
+              "Round 2 minus Round 1 DoB-weighted pooled estimate."
+            ),
+            
+            tags$li(
+              tags$b("Δ Degree of Belief: "),
+              "Round 2 minus Round 1 average Degree of Belief."
+            )
+          )
+          )
       )
     )
   )

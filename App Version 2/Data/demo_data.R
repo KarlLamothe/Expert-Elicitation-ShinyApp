@@ -19,8 +19,74 @@ demo_df <- cbind.data.frame(
                            0.22,0.26,0.26,0.22,0.49,0.47,0.62,0.55,0.51,0.67,
                            0.71,0.67,0.73,0.70,0.71,0.75,0.49,0.47,0.46,0.49,
                            0.47,0.54,0.22,0.38,0.33,0.26,0.27,0.30),
-  Degree_of_Belief = c(100, 90, 50, 30, 85, 79, 99, 84, 33, 24, 
+  Degree_of_Belief = c(100, 0, 50, 30, 85, 79, 99, 84, 33, 24, 
                        77, 100, 100, 74, 24, 28, 34, 65, 88, 19,
-                       100, 100, 100, 100, 45, 50, 66, 99, 34,
+                       100, 100, 100, 0, 45, 50, 66, 99, 34,
                        33, 22, 56, 98, 93, 100, 100, 100, 34, 25,
                        45, 34, 26, 89, 50, 50 , 50 , 23, 19))
+
+# Existing demonstration data become Round 1
+demo_round1 <- demo_df
+demo_round1$Round <- 1
+
+# Create Round 2 from Round 1
+# These changes are for demonstration/testing purposes only and are designed
+# to represent plausible post-discussion revisions in expert judgements.
+
+set.seed(123)
+demo_round2 <- demo_round1
+demo_round2$Round <- 2
+
+# Allow some experts to revise their best guesses after discussion
+bg_change <- sample(
+  c(-0.08, -0.05, -0.03, 0, 0, 0, 0.03, 0.05, 0.08),
+  nrow(demo_round2),
+  replace = TRUE)
+
+demo_round2$Best_Guess_Pr <- pmin(
+  pmax(demo_round2$Best_Guess_Pr + bg_change, 0),
+  1)
+
+# Allow plausible bounds to shift somewhat between rounds
+lpp_change <- sample(
+  c(-0.05, -0.03, 0, 0, 0, 0.03, 0.05),
+  nrow(demo_round2),
+  replace = TRUE)
+
+hpp_change <- sample(
+  c(-0.05, -0.03, 0, 0, 0, 0.03, 0.05),
+  nrow(demo_round2),
+  replace = TRUE)
+
+demo_round2$Lowest_Plausible_Pr <- pmin(
+  pmax(demo_round2$Lowest_Plausible_Pr + lpp_change, 0),
+  demo_round2$Best_Guess_Pr)
+
+demo_round2$Highest_Plausible_Pr <- pmax(
+  pmin(demo_round2$Highest_Plausible_Pr + hpp_change, 1),
+  demo_round2$Best_Guess_Pr)
+
+# Allow Degree of Belief to change following discussion
+dob_change <- sample(
+  c(-15, -10, -5, 0, 0, 5, 10, 15),
+  nrow(demo_round2),
+  replace = TRUE)
+
+demo_round2$Degree_of_Belief <- pmin(
+  pmax(demo_round2$Degree_of_Belief + dob_change, 0),
+  100)
+
+# Combine both rounds
+demo_df <- rbind(demo_round1, demo_round2)
+
+# Put Round beside Question for readability
+demo_df <- demo_df[, c(
+  "Question",
+  "Round",
+  "Participant",
+  "Lowest_Plausible_Pr",
+  "Best_Guess_Pr",
+  "Highest_Plausible_Pr",
+  "Degree_of_Belief"
+)]
+

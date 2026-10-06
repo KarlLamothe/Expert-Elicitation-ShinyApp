@@ -10,20 +10,16 @@ build_density_plot <- function(r,
   
   p <- ggplot() +
     # Equal-weight mixture
-    geom_line(data = r$dens_mix_all, 
-              aes(x = p,y = density,color = "Equal-weight mixture",
-                  linetype = "Equal-weight mixture"),linewidth = 0.8) +
+    geom_line(data = r$dens_mix_all, aes(x = p, y = density,
+                                         color = "Equal-weight mixture"),
+      linewidth = 0.8)+
     xlim(0, 1) +
     labs(x = "Probability", y = "Density") +
     scale_color_manual(name = NULL,
                        values = c("Equal-weight mixture" = "black",
                                   "DoB-weighted mixture" = "#D55E00",
                                   "Beta approximation" = "#0072B2")) +
-    scale_linetype_manual(name = NULL, 
-                          values = c("Equal-weight mixture" = "solid",
-                                     "DoB-weighted mixture" = "solid",
-                                     "Beta approximation" = "dashed")) +
-    guides(color = guide_legend(order = 1, nrow = 1),linetype = "none") +
+    guides(color = guide_legend(order = 1, nrow = 1)) +
     theme(axis.text.y = element_blank(),
           axis.ticks.y = element_blank(),
           legend.position = "bottom",
@@ -37,42 +33,73 @@ build_density_plot <- function(r,
   
   # DoB-weighted mixture
   if (isTRUE(show_dob_mix)) {
-    p <- p + geom_line(data = r$dens_mix_w_all, 
-                       aes(x = p, y = density,
-                           color = "DoB-weighted mixture",
-                           linetype = "DoB-weighted mixture"),
-                       linewidth = 0.8)
+    p <- p + geom_line(
+      data = r$dens_mix_w_all,aes(x = p, y = density, color = "DoB-weighted mixture"),
+      linewidth = 0.8)
     }
   
   # Beta approximation
   if (isTRUE(show_beta)) {
-    p <- p + geom_line(data = r$beta_all, 
-                       aes(x = p,y = density,
-                           color = "Beta approximation",
-                           linetype = "Beta approximation"),
-                       linewidth = 0.8)
+    p <- p + geom_line(
+      data = r$beta_all,
+      aes( x = p,y = density, color = "Beta approximation"),
+      linewidth = 0.8, linetype="dashed")
+    
     }
   
   # Faceting
-  if (is.null(facet_cols)) {
-    p <- p + facet_wrap( ~ Question,scales = "free_y")
+  if ("Question_Round" %in% names(r$dens_mix_all)) {
+    
+    p <- p +
+      facet_wrap(
+        ~ Question_Round,
+        scales = "free_y"
+      )
     
   } else {
     
-    p <- p + facet_wrap( ~ Question, ncol = facet_cols, scales = "fixed")
+    if (is.null(facet_cols)) {
+      
+      p <- p +
+        facet_wrap(
+          ~ Question,
+          scales = "free_y"
+        )
+      
+    } else {
+      
+      p <- p +
+        facet_wrap(
+          ~ Question,
+          ncol = facet_cols,
+          scales = "fixed"
+        )
+    }
   }
-  p
+p
 }
-
 
 build_hist_plot <- function(r,
                             show_beta = TRUE,
                             show_dob_mix = TRUE,
                             facet_cols = NULL) {
   
+  # Prepare histogram data for optional round faceting
+  samples_plot <- r$samples_all
+  
+  if ("Round" %in% names(samples_plot)) {
+    
+    samples_plot <- samples_plot %>%
+      mutate(
+        Question_Round = paste0(
+          "Question ", Question,
+          "\nRound ", Round
+        )
+      )
+  }
+  
   p <- ggplot() +
-    geom_histogram(data = r$samples_all, 
-                   aes(x = samples, y = after_stat(density)),
+    geom_histogram(data = samples_plot, aes(x = samples, y = after_stat(density)),
                    bins = 50, fill = "grey85", color = "white") +
     geom_line(data = r$dens_mix_all, aes(x = p, y = density,
                                          color = "Equal-weight mixture",
@@ -104,10 +131,44 @@ build_hist_plot <- function(r,
   }
   
   # Faceting
-  if (is.null(facet_cols)) {
-    p <- p + facet_wrap(~ Question, scales = "free_y")
+  if ("Question_Round" %in% names(samples_plot)) {
+    
+    if (is.null(facet_cols)) {
+      
+      p <- p +
+        facet_wrap(
+          ~ Question_Round,
+          scales = "free_y"
+        )
+      
+    } else {
+      
+      p <- p +
+        facet_wrap(
+          ~ Question_Round,
+          ncol = facet_cols,
+          scales = "free_y"
+        )
+    }
+    
   } else {
-    p <- p + facet_wrap(~ Question, ncol = facet_cols)
+    
+    if (is.null(facet_cols)) {
+      
+      p <- p +
+        facet_wrap(
+          ~ Question,
+          scales = "free_y"
+        )
+      
+    } else {
+      
+      p <- p +
+        facet_wrap(
+          ~ Question,
+          ncol = facet_cols
+        )
+    }
   }
   p
 }
@@ -154,10 +215,43 @@ build_cdf_plot <- function(r,
   }
   
   # Faceting
-  if (is.null(facet_cols)) {
-    p <- p + facet_wrap(~ Question)
+  if ("Question_Round" %in% names(r$cdf_mix_all)) {
+    
+    # Multi-round data
+    if (is.null(facet_cols)) {
+      
+      p <- p +
+        facet_wrap(
+          ~ Question_Round
+        )
+      
+    } else {
+      
+      p <- p +
+        facet_wrap(
+          ~ Question_Round,
+          ncol = facet_cols
+        )
+    }
+    
   } else {
-    p <- p + facet_wrap(~ Question, ncol = facet_cols)
+    
+    # Single-round data
+    if (is.null(facet_cols)) {
+      
+      p <- p +
+        facet_wrap(
+          ~ Question
+        )
+      
+    } else {
+      
+      p <- p +
+        facet_wrap(
+          ~ Question,
+          ncol = facet_cols
+        )
+    }
   }
   
   p
@@ -166,6 +260,7 @@ build_cdf_plot <- function(r,
 build_individuals_plot <- function(df_raw,
                                    id_col, lpp_col, bgp_col, hpp_col,
                                    question_col = NULL,
+                                   round_col = NULL,
                                    selected_questions = NULL,
                                    use_export_theme = FALSE,
                                    theme_export = NULL, 
@@ -190,14 +285,41 @@ build_individuals_plot <- function(df_raw,
   }
   
   # Build plotting frame using raw (unfixed) values
-  dfp <- df %>%
-    transmute(
-      Question             = .data[[q_col]],
-      Participant          = as.character(.data[[id_col]]),
-      Lowest_Plausible_Pr  = suppressWarnings(as.numeric(.data[[lpp_col]])),
-      Best_Guess_Pr        = suppressWarnings(as.numeric(.data[[bgp_col]])),
-      Highest_Plausible_Pr = suppressWarnings(as.numeric(.data[[hpp_col]]))
-    )
+  # Determine whether a Round column is available
+  has_round <- !is.null(round_col) &&
+    !identical(round_col, "<none>") &&
+    round_col %in% names(df)
+  
+  # Build plotting frame using raw values
+  if (has_round) {
+    
+    dfp <- df %>%
+      transmute(
+        Question             = .data[[q_col]],
+        Round                = as.character(.data[[round_col]]),
+        Participant          = as.character(.data[[id_col]]),
+        Lowest_Plausible_Pr  = suppressWarnings(as.numeric(.data[[lpp_col]])),
+        Best_Guess_Pr        = suppressWarnings(as.numeric(.data[[bgp_col]])),
+        Highest_Plausible_Pr = suppressWarnings(as.numeric(.data[[hpp_col]]))
+      ) %>%
+      mutate(
+        Question_Round = paste0(
+          "Question ", Question,
+          "\nRound ", Round
+        )
+      )
+    
+  } else {
+    
+    dfp <- df %>%
+      transmute(
+        Question             = .data[[q_col]],
+        Participant          = as.character(.data[[id_col]]),
+        Lowest_Plausible_Pr  = suppressWarnings(as.numeric(.data[[lpp_col]])),
+        Best_Guess_Pr        = suppressWarnings(as.numeric(.data[[bgp_col]])),
+        Highest_Plausible_Pr = suppressWarnings(as.numeric(.data[[hpp_col]]))
+      )
+  }
   
   # Long form for 3 raw points (LPP, BGP, HPP)
   # Give the three measures readable labels
@@ -236,7 +358,6 @@ build_individuals_plot <- function(df_raw,
                                   "Best guess",
                                   "Highest plausible")) +
     labs(x = NULL, y = "Probability") +
-    facet_wrap(~ Question, ncol = facet_cols,scales = "fixed") +
     theme(
       axis.text.y = element_blank(),
       axis.ticks.y = element_blank(),
@@ -244,6 +365,25 @@ build_individuals_plot <- function(df_raw,
       legend.direction = "horizontal",
       legend.text = element_text(size = 14),
       panel.grid.minor = element_blank())
+  # Faceting
+  if (has_round) {
+    
+    g <- g +
+      facet_wrap(
+        ~ Question_Round,
+        ncol = facet_cols,
+        scales = "fixed"
+      )
+    
+  } else {
+    
+    g <- g +
+      facet_wrap(
+        ~ Question,
+        ncol = facet_cols,
+        scales = "fixed"
+      )
+  }
   
   # If you defined a smaller export theme and asked to use it, apply it
   if (isTRUE(use_export_theme) && !is.null(theme_export)) {

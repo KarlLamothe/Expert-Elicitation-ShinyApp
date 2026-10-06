@@ -82,26 +82,93 @@ server <- function(input, output, session) {
   # Column mapping UI
   output$colmap_ui <- renderUI({
     req(raw_df())
+    
     df <- raw_df()
     cols <- names(df)
     default_question <- best_question_col(df)
     
     tagList(
-      selectInput("col_question", "Question column", choices = c("Question", cols),
-                  selected = if (default_question %in% cols) default_question else "<none>"),
-      selectInput("col_id", "Participant ID column", choices = cols,
-                  selected = if ("Participant" %in% cols) "Participant" else cols[1]),
-      selectInput("col_lpp", "Lowest plausible (LPP)", choices = cols,
-                  selected = grep("Lowest|LPP", cols, ignore.case = TRUE, value = TRUE)[1]),
-      selectInput("col_bgp", "Best guess (BGP)", choices = cols,
-                  selected = grep("Best|BGP", cols, ignore.case = TRUE, value = TRUE)[1]),
-      selectInput("col_hpp", "Highest plausible (HPP)", choices = cols,
-                  selected = grep("Highest|HPP", cols, ignore.case = TRUE, value = TRUE)[1]),
-      selectInput("col_dob", "Degree of Belief (DoB; optional)", choices = c("<none>", cols),
-                  selected = {
-                    hit <- grep("Belief|DoB", cols, ignore.case = TRUE, value = TRUE)
-                    if (length(hit) > 0) hit[1] else "<none>"
-                  })
+      selectInput(
+        "col_question",
+        "Question column",
+        choices = c("Question", cols),
+        selected = if (default_question %in% cols) default_question else "<none>"
+      ),
+      
+      selectInput(
+        "col_id",
+        "Participant ID column",
+        choices = cols,
+        selected = if ("Participant" %in% cols) "Participant" else cols[1]
+      ),
+      
+      selectInput(
+        "col_lpp",
+        "Lowest plausible (LPP)",
+        choices = cols,
+        selected = grep(
+          "Lowest|LPP",
+          cols,
+          ignore.case = TRUE,
+          value = TRUE
+        )[1]
+      ),
+      
+      selectInput(
+        "col_bgp",
+        "Best guess (BGP)",
+        choices = cols,
+        selected = grep(
+          "Best|BGP",
+          cols,
+          ignore.case = TRUE,
+          value = TRUE
+        )[1]
+      ),
+      
+      selectInput(
+        "col_hpp",
+        "Highest plausible (HPP)",
+        choices = cols,
+        selected = grep(
+          "Highest|HPP",
+          cols,
+          ignore.case = TRUE,
+          value = TRUE
+        )[1]
+      ),
+      
+      selectInput(
+        "col_dob",
+        "Degree of Belief (DoB; optional)",
+        choices = c("<none>", cols),
+        selected = {
+          hit <- grep(
+            "Belief|DoB",
+            cols,
+            ignore.case = TRUE,
+            value = TRUE
+          )
+          
+          if (length(hit) > 0) hit[1] else "<none>"
+        }
+      ),
+      
+      selectInput(
+        "col_round",
+        "Elicitation round (optional)",
+        choices = c("<none>", cols),
+        selected = {
+          hit <- grep(
+            "^Round$|Elicitation.*Round|Response.*Round",
+            cols,
+            ignore.case = TRUE,
+            value = TRUE
+          )
+          
+          if (length(hit) > 0) hit[1] else "<none>"
+        }
+      )
     )
   })
   
@@ -137,69 +204,507 @@ server <- function(input, output, session) {
     
     qs <- unique(df[[q_col]])
     
-    # Summarize per selected questions (random seed each run)
-    res_list <- lapply(qs, function(q) {
-      df_q <- df %>% filter(.data[[q_col]] == q)
-      dob_col_val <- if (!is.null(input$col_dob) && !identical(input$col_dob, "<none>"))
-        input$col_dob else NULL
-      summarize_question_pert(
-        df_q,
-        id_col  = input$col_id,
-        lpp_col = input$col_lpp,
-        bgp_col = input$col_bgp,
-        hpp_col = input$col_hpp,
-        dob_col = dob_col_val,
-        lambda  = input$lambda,
-        Nsim    = input$Nsim,
-        seed    = NULL,                # random seed inside
-        question_label = as.character(q)
-      )
-    })
-    names(res_list) <- as.character(qs)
+    # Summarize per selected question
+    dob_col_val <- if (
+      !is.null(input$col_dob) &&
+      !identical(input$col_dob, "<none>")
+    ) {
+      input$col_dob
+    } else {
+      NULL
+    }
     
-    # Identify questions for which DoB weighting is unavailable
-    dob_unavailable <- vapply(
-      res_list,
-      function(x) !isTRUE(x$dob_available),
-      logical(1)
-    )
+    round_col_val <- if (
+      !is.null(input$col_round) &&
+      !identical(input$col_round, "<none>")
+    ) {
+      input$col_round
+    } else {
+      NULL
+    }
     
-    if (any(dob_unavailable)) {
+    # -------------------------------------------------------------------------
+    # Single-round analysis
+    # -------------------------------------------------------------------------
+    if (is.null(round_col_val)) {
       
-      affected_questions <- names(res_list)[dob_unavailable]
+      res_list <- lapply(qs, function(q) {
+        
+        df_q <- df %>%
+          filter(.data[[q_col]] == q)
+        
+        summarize_question_pert(
+          df_q,
+          id_col  = input$col_id,
+          lpp_col = input$col_lpp,
+          bgp_col = input$col_bgp,
+          hpp_col = input$col_hpp,
+          dob_col = dob_col_val,
+          lambda  = input$lambda,
+          Nsim    = input$Nsim,
+          seed    = NULL,
+          question_label = as.character(q)
+        )
+      })
       
-      showNotification(
-        paste0(
-          "DoB-weighted results are unavailable for question",
-          if (length(affected_questions) > 1) "s " else " ",
-          paste(affected_questions, collapse = ", "),
-          " because all participants reported a Degree of Belief of 0. ",
-          "Equal-weight results remain available."
-        ),
-        type = "warning",
-        duration = 10
+      names(res_list) <- as.character(qs)
+      
+      # -------------------------------------------------------------------------
+      # Multi-round analysis
+      # -------------------------------------------------------------------------
+    } else {
+      
+      res_list <- lapply(qs, function(q) {
+        
+        df_q <- df %>%
+          filter(.data[[q_col]] == q)
+        
+        rounds_q <- sort(unique(df_q[[round_col_val]]))
+        
+        round_results <- lapply(rounds_q, function(r) {
+          
+          df_qr <- df_q %>%
+            filter(.data[[round_col_val]] == r)
+          
+          summarize_question_pert(
+            df_qr,
+            id_col  = input$col_id,
+            lpp_col = input$col_lpp,
+            bgp_col = input$col_bgp,
+            hpp_col = input$col_hpp,
+            dob_col = dob_col_val,
+            lambda  = input$lambda,
+            Nsim    = input$Nsim,
+            seed    = NULL,
+            question_label = as.character(q)
+          )
+        })
+        
+        names(round_results) <- as.character(rounds_q)
+        
+        round_results
+      })
+      
+      names(res_list) <- as.character(qs)
+    }
+    
+    # -------------------------------------------------------------------------
+    # Identify questions/rounds for which DoB weighting is unavailable
+    # -------------------------------------------------------------------------
+    
+    if (is.null(round_col_val)) {
+      
+      # Single-round data
+      dob_unavailable <- vapply(
+        res_list,
+        function(x) !isTRUE(x$dob_available),
+        logical(1)
       )
+      
+      if (any(dob_unavailable)) {
+        
+        affected_questions <- names(res_list)[dob_unavailable]
+        
+        showNotification(
+          paste0(
+            "DoB-weighted results are unavailable for question",
+            if (length(affected_questions) > 1) "s " else " ",
+            paste(affected_questions, collapse = ", "),
+            " because all participants reported a Degree of Belief of 0. ",
+            "Equal-weight results remain available."
+          ),
+          type = "warning",
+          duration = 10
+        )
+      }
+      
+    } else {
+      
+      # Multi-round data
+      affected <- character(0)
+      
+      for (q in names(res_list)) {
+        
+        for (r in names(res_list[[q]])) {
+          
+          if (!isTRUE(res_list[[q]][[r]]$dob_available)) {
+            affected <- c(
+              affected,
+              paste0("Question ", q, " (Round ", r, ")")
+            )
+          }
+        }
+      }
+      
+      if (length(affected) > 0) {
+        
+        showNotification(
+          paste0(
+            "DoB-weighted results are unavailable for ",
+            paste(affected, collapse = ", "),
+            " because all participants reported a Degree of Belief of 0. ",
+            "Equal-weight results remain available."
+          ),
+          type = "warning",
+          duration = 10
+        )
+      }
     }
     
     # Bind everything
-    summary_all    <- bind_rows(lapply(res_list, `[[`, "summary"))
-    dens_mix_all   <- bind_rows(lapply(res_list, function(r) r$facet$mixture))
-    dens_mix_w_all <- bind_rows(lapply(res_list, function(r) r$facet$mixture_w))
-    dens_ind_all   <- bind_rows(lapply(res_list, function(r) r$facet$individual))
-    beta_all       <- bind_rows(lapply(res_list, function(r) r$facet$beta))
-    beta_w_all     <- bind_rows(lapply(res_list, function(r) r$facet$beta_w))
+    # -------------------------------------------------------------------------
+    # Bind results for plotting, summaries, and downloads
+    # -------------------------------------------------------------------------
     
-    cdf_mix_all    <- bind_rows(lapply(res_list, function(r) r$facet$cdf_mixture))
-    cdf_mix_w_all  <- bind_rows(lapply(res_list, function(r) r$facet$cdf_mixture_w))
-    cdf_emp_all    <- bind_rows(lapply(res_list, function(r) r$facet$cdf_emp))
-    cdf_emp_w_all  <- bind_rows(lapply(res_list, function(r) r$facet$cdf_emp_w))
-    cdf_beta_all   <- bind_rows(lapply(res_list, function(r) r$facet$cdf_beta))
-    cdf_beta_w_all <- bind_rows(lapply(res_list, function(r) r$facet$cdf_beta_w))
-    cdf_ind_all    <- bind_rows(lapply(res_list, function(r) r$facet$cdf_individual))
-    
-    samples_all  <- bind_rows(lapply(names(res_list), function(nm) {
-      tibble(Question = nm, samples = res_list[[nm]]$samples)
-    }))
+    if (is.null(round_col_val)) {
+      
+      # ==============================================================
+      # SINGLE-ROUND DATA
+      # Preserve the original structure
+      # ==============================================================
+      
+      summary_all <- bind_rows(
+        lapply(res_list, `[[`, "summary")
+      )
+      
+      dens_mix_all <- bind_rows(
+        lapply(res_list, function(r) r$facet$mixture)
+      )
+      
+      dens_mix_w_all <- bind_rows(
+        lapply(res_list, function(r) r$facet$mixture_w)
+      )
+      
+      dens_ind_all <- bind_rows(
+        lapply(res_list, function(r) r$facet$individual)
+      )
+      
+      beta_all <- bind_rows(
+        lapply(res_list, function(r) r$facet$beta)
+      )
+      
+      beta_w_all <- bind_rows(
+        lapply(res_list, function(r) r$facet$beta_w)
+      )
+      
+      cdf_mix_all <- bind_rows(
+        lapply(res_list, function(r) r$facet$cdf_mixture)
+      )
+      
+      cdf_mix_w_all <- bind_rows(
+        lapply(res_list, function(r) r$facet$cdf_mixture_w)
+      )
+      
+      cdf_emp_all <- bind_rows(
+        lapply(res_list, function(r) r$facet$cdf_emp)
+      )
+      
+      cdf_emp_w_all <- bind_rows(
+        lapply(res_list, function(r) r$facet$cdf_emp_w)
+      )
+      
+      cdf_beta_all <- bind_rows(
+        lapply(res_list, function(r) r$facet$cdf_beta)
+      )
+      
+      cdf_beta_w_all <- bind_rows(
+        lapply(res_list, function(r) r$facet$cdf_beta_w)
+      )
+      
+      cdf_ind_all <- bind_rows(
+        lapply(res_list, function(r) r$facet$cdf_individual)
+      )
+      
+      samples_all <- bind_rows(
+        lapply(names(res_list), function(q) {
+          tibble(
+            Question = q,
+            samples = res_list[[q]]$samples
+          )
+        })
+      )
+      
+    } else {
+      
+      # ==============================================================
+      # MULTI-ROUND DATA
+      # Flatten Question -> Round -> Result into data frames
+      # ==============================================================
+      
+      summary_all <- bind_rows(
+        lapply(names(res_list), function(q) {
+          
+          bind_rows(
+            lapply(names(res_list[[q]]), function(rnd) {
+              
+              res_list[[q]][[rnd]]$summary %>%
+                mutate(Round = rnd, .after = Question)
+            })
+          )
+        })
+      )
+      
+      dens_mix_all <- bind_rows(
+        lapply(names(res_list), function(q) {
+          
+          bind_rows(
+            lapply(names(res_list[[q]]), function(rnd) {
+              
+              res_list[[q]][[rnd]]$facet$mixture %>%
+                mutate(Round = rnd, .after = Question)
+            })
+          )
+        })
+      )
+      
+      dens_mix_w_all <- bind_rows(
+        lapply(names(res_list), function(q) {
+          
+          bind_rows(
+            lapply(names(res_list[[q]]), function(rnd) {
+              
+              res_list[[q]][[rnd]]$facet$mixture_w %>%
+                mutate(Round = rnd, .after = Question)
+            })
+          )
+        })
+      )
+      
+      dens_ind_all <- bind_rows(
+        lapply(names(res_list), function(q) {
+          
+          bind_rows(
+            lapply(names(res_list[[q]]), function(rnd) {
+              
+              res_list[[q]][[rnd]]$facet$individual %>%
+                mutate(Round = rnd, .after = Question)
+            })
+          )
+        })
+      )
+      
+      beta_all <- bind_rows(
+        lapply(names(res_list), function(q) {
+          
+          bind_rows(
+            lapply(names(res_list[[q]]), function(rnd) {
+              
+              res_list[[q]][[rnd]]$facet$beta %>%
+                mutate(Round = rnd, .after = Question)
+            })
+          )
+        })
+      )
+      
+      beta_w_all <- bind_rows(
+        lapply(names(res_list), function(q) {
+          
+          bind_rows(
+            lapply(names(res_list[[q]]), function(rnd) {
+              
+              res_list[[q]][[rnd]]$facet$beta_w %>%
+                mutate(Round = rnd, .after = Question)
+            })
+          )
+        })
+      )
+      
+      cdf_mix_all <- bind_rows(
+        lapply(names(res_list), function(q) {
+          
+          bind_rows(
+            lapply(names(res_list[[q]]), function(rnd) {
+              
+              res_list[[q]][[rnd]]$facet$cdf_mixture %>%
+                mutate(Round = rnd, .after = Question)
+            })
+          )
+        })
+      )
+      
+      cdf_mix_w_all <- bind_rows(
+        lapply(names(res_list), function(q) {
+          
+          bind_rows(
+            lapply(names(res_list[[q]]), function(rnd) {
+              
+              res_list[[q]][[rnd]]$facet$cdf_mixture_w %>%
+                mutate(Round = rnd, .after = Question)
+            })
+          )
+        })
+      )
+      
+      cdf_emp_all <- bind_rows(
+        lapply(names(res_list), function(q) {
+          
+          bind_rows(
+            lapply(names(res_list[[q]]), function(rnd) {
+              
+              res_list[[q]][[rnd]]$facet$cdf_emp %>%
+                mutate(Round = rnd, .after = Question)
+            })
+          )
+        })
+      )
+      
+      cdf_emp_w_all <- bind_rows(
+        lapply(names(res_list), function(q) {
+          
+          bind_rows(
+            lapply(names(res_list[[q]]), function(rnd) {
+              
+              res_list[[q]][[rnd]]$facet$cdf_emp_w %>%
+                mutate(Round = rnd, .after = Question)
+            })
+          )
+        })
+      )
+      
+      cdf_beta_all <- bind_rows(
+        lapply(names(res_list), function(q) {
+          
+          bind_rows(
+            lapply(names(res_list[[q]]), function(rnd) {
+              
+              res_list[[q]][[rnd]]$facet$cdf_beta %>%
+                mutate(Round = rnd, .after = Question)
+            })
+          )
+        })
+      )
+      
+      cdf_beta_w_all <- bind_rows(
+        lapply(names(res_list), function(q) {
+          
+          bind_rows(
+            lapply(names(res_list[[q]]), function(rnd) {
+              
+              res_list[[q]][[rnd]]$facet$cdf_beta_w %>%
+                mutate(Round = rnd, .after = Question)
+            })
+          )
+        })
+      )
+      
+      cdf_ind_all <- bind_rows(
+        lapply(names(res_list), function(q) {
+          
+          bind_rows(
+            lapply(names(res_list[[q]]), function(rnd) {
+              
+              res_list[[q]][[rnd]]$facet$cdf_individual %>%
+                mutate(Round = rnd, .after = Question)
+            })
+          )
+        })
+      )
+      
+      samples_all <- bind_rows(
+        lapply(names(res_list), function(q) {
+          
+          bind_rows(
+            lapply(names(res_list[[q]]), function(rnd) {
+              
+              tibble(
+                Question = q,
+                Round = rnd,
+                samples = res_list[[q]][[rnd]]$samples
+              )
+            })
+          )
+        })
+      )
+      
+      # Create combined Question-Round labels for faceting
+      cdf_mix_all <- cdf_mix_all %>%
+        mutate(
+          Question_Round = paste0(
+            "Question ", Question,
+            "\nRound ", Round
+          )
+        )
+      
+      cdf_mix_w_all <- cdf_mix_w_all %>%
+        mutate(
+          Question_Round = paste0(
+            "Question ", Question,
+            "\nRound ", Round
+          )
+        )
+      
+      cdf_emp_all <- cdf_emp_all %>%
+        mutate(
+          Question_Round = paste0(
+            "Question ", Question,
+            "\nRound ", Round
+          )
+        )
+      
+      cdf_emp_w_all <- cdf_emp_w_all %>%
+        mutate(
+          Question_Round = paste0(
+            "Question ", Question,
+            "\nRound ", Round
+          )
+        )
+      
+      cdf_beta_all <- cdf_beta_all %>%
+        mutate(
+          Question_Round = paste0(
+            "Question ", Question,
+            "\nRound ", Round
+          )
+        )
+      
+      cdf_beta_w_all <- cdf_beta_w_all %>%
+        mutate(
+          Question_Round = paste0(
+            "Question ", Question,
+            "\nRound ", Round
+          )
+        )
+      
+      cdf_ind_all <- cdf_ind_all %>%
+        mutate(
+          Question_Round = paste0(
+            "Question ", Question,
+            "\nRound ", Round
+          )
+        )
+      
+      dens_mix_all <- dens_mix_all %>%
+        mutate(
+          Question_Round = paste0(
+            "Question ", Question,
+            "\nRound ", Round
+          )
+        )
+      
+      dens_mix_w_all <- dens_mix_w_all %>%
+        mutate(
+          Question_Round = paste0(
+            "Question ", Question,
+            "\nRound ", Round
+          )
+        )
+      
+      dens_ind_all <- dens_ind_all %>%
+        mutate(
+          Question_Round = paste0(
+            "Question ", Question,
+            "\nRound ", Round
+          )
+        )
+      
+      beta_all <- beta_all %>%
+        mutate(
+          Question_Round = paste0(
+            "Question ", Question,
+            "\nRound ", Round
+          )
+        )
+    }
     
     list(
       summaries      = summary_all,
@@ -536,8 +1041,15 @@ server <- function(input, output, session) {
       bgp_col = input$col_bgp,
       hpp_col = input$col_hpp,
       question_col = input$col_question,
-      selected_questions = input$question_multi,
-      facet_cols = NULL   # ✅ adaptive
+      round_col = if (
+        !is.null(input$col_round) &&
+        !identical(input$col_round, "<none>")
+      ) {
+        input$col_round
+      } else {
+        NULL
+      },
+      selected_questions = input$question_multi
     )
   })
   
@@ -550,7 +1062,7 @@ server <- function(input, output, session) {
       show_individual = isTRUE(input$show_individual),
       show_beta       = isTRUE(input$show_beta),
       show_dob_mix    = isTRUE(input$show_dob_mix),
-      facet_cols      = NULL   # ✅ adaptive
+      facet_cols      = NULL   
     )
   })
   
@@ -587,17 +1099,19 @@ server <- function(input, output, session) {
     s <- results()$summaries
     
     # Summary cards are intended for a single selected question
-    if (nrow(s) != 1) {
+    n_questions <- length(unique(s$Question))
+    
+    if (n_questions != 1) {
       
       return(
         div(
           style = "
-          background-color: #f5f5f5;
-          border-left: 4px solid #888888;
-          padding: 12px;
-          border-radius: 6px;
-          margin-bottom: 15px;
-        ",
+      background-color: #f5f5f5;
+      border-left: 4px solid #888888;
+      padding: 12px;
+      border-radius: 6px;
+      margin-bottom: 15px;
+      ",
           
           tags$strong("Multiple questions selected"),
           
@@ -611,6 +1125,45 @@ server <- function(input, output, session) {
       )
     }
     
+    if ("Round" %in% names(s) && nrow(s) == 2) {
+      multi_round <- TRUE
+      s1 <- s %>% filter(as.character(Round) == "1")
+      s2 <- s %>% filter(as.character(Round) == "2")
+      
+    } else {
+      multi_round <- FALSE
+      s1 <- s
+      s2 <- s
+    }
+    if (!multi_round) {
+      
+      # original cards
+      
+    } else {
+      
+      # round comparison cards
+      
+    }
+    
+    # Use Round 2 metrics in cards for now
+    s <- s2
+    eqw_delta <- s2$EqW_Mean - s1$EqW_Mean
+    dob_delta <- s2$DoB_Mean - s1$DoB_Mean
+    conf_delta <- s2$Mean_DoB - s1$Mean_DoB
+    
+    delta_colour <- function(x) {
+      
+      if (is.na(x)) {
+        "#666666"
+      } else if (x > 0) {
+        "#4C956C"   # green
+      } else if (x < 0) {
+        "#D55E00"   # orange/red
+      } else {
+        "#245674"   # blue
+      }
+    }
+    
     # Reusable card styles
     card_style <- "
     background-color: #f7f9fa;
@@ -622,11 +1175,17 @@ server <- function(input, output, session) {
     min-height: 110px;
   "
     
-    value_style <- "
+    value_style <- function(colour) {
+      paste0(
+        "
     font-size: 28px;
     font-weight: 600;
-    color: #245674;
-  "
+    color: ",
+        colour,
+        ";
+    "
+      )
+    }
     
     label_style <- "
     color: #666666;
@@ -636,30 +1195,153 @@ server <- function(input, output, session) {
     
     fluidRow(
       # Pooled mean
-      column(3,div(style = card_style, 
-                   div(style = value_style,sprintf("%.2f", s$EqW_Mean)),
-                   div(style = label_style, "Pooled mean"))),
-      # 90% interval
-      column(3, div(style = card_style,
-                    div(style = value_style,
-                        paste0(sprintf("%.2f", s$EqW_5th), " – ",
-                               sprintf("%.2f", s$EqW_95th))),
-                    div(style = label_style, "90% interval"))),
+      column(
+        2,
+        div(
+          style = card_style,
+          div(
+            style = value_style(delta_colour(eqw_delta)),
+            sprintf("%+.2f", eqw_delta)
+          ),
+          div(
+            style = label_style,
+            "Δ Equal-weight mean"
+          )
+        )
+      ),
+      
       # DoB weighted mean
-      column(2,div(style = card_style,
-                   div(style = value_style,sprintf("%.2f", s$DoB_Mean)),
-                   div(style = label_style, "DoB-weighted mean"))),
+      column(
+        2,
+        div(
+          style = card_style,
+          div(
+            style = value_style(delta_colour(dob_delta)),
+            sprintf("%+.2f", dob_delta)
+          ),
+          div(
+            style = label_style,
+            "Δ DoB-weighted mean"
+          )
+        )
+      ),
       
       # Mean Degree of Belief
-      column(2, div(style = card_style,
-                    div(style = value_style,
-                        paste0(round(s$Mean_DoB),"%")),
-                    div(style = label_style, "Mean DoB"))),
+      column(
+        2,
+        div(
+          style = card_style,
+          div(
+            style = value_style(delta_colour(conf_delta)),
+            paste0(
+              sprintf("%+.0f", conf_delta),
+              "%"
+            )
+          ),
+          div(
+            style = label_style,
+            "Δ Degree of Belief"
+          )
+        )
+      ),
+      
+      #Round 1 mean
+      column(
+        2,
+        div(
+          style = card_style,
+          div(
+            style = value_style("#245674"),
+            sprintf("%.2f", s1$EqW_Mean)
+          ),
+          div(
+            style = label_style,
+            "Equal-weight mean (R1)"
+          )
+        )
+      ),
+      
+      # Round 2 mean
+      column(
+        2,
+        div(
+          style = card_style,
+          div(
+            style = value_style("#245674"),
+            sprintf("%.2f", s2$EqW_Mean)
+          ),
+          div(
+            style = label_style,
+            "Equal-weight mean (R2)"
+          )
+        )
+      ),
       
       # Number of experts
       column(2,div(style = card_style,
-                   div(style = value_style, s$N_Participants),
+                   div(
+                     style = value_style("#245674"), s$N_Participants),
                    div(style = label_style,"Experts"))))
+  })
+  
+  output$round_comparison_table <- renderTable({
+    
+    req(results())
+    
+    summ <- results()$summaries
+    
+    # Only build comparison if Round exists
+    if (!"Round" %in% names(summ)) {
+      return(NULL)
+    }
+    
+    # Require at least two rounds
+    if (!all(c("1", "2") %in% unique(as.character(summ$Round)))) {
+      return(NULL)
+    }
+    
+    r1 <- summ %>%
+      filter(as.character(Round) == "1") %>%
+      select(
+        Question,
+        EqW_Mean_R1 = EqW_Mean,
+        DoB_Mean_R1 = DoB_Mean,
+        Mean_DoB_R1 = Mean_DoB
+      )
+    
+    r2 <- summ %>%
+      filter(as.character(Round) == "2") %>%
+      select(
+        Question,
+        EqW_Mean_R2 = EqW_Mean,
+        DoB_Mean_R2 = DoB_Mean,
+        Mean_DoB_R2 = Mean_DoB
+      )
+    
+    left_join(r1, r2, by = "Question") %>%
+      mutate(
+        `Δ Equal-weight mean` =
+          EqW_Mean_R2 - EqW_Mean_R1,
+        
+        `Δ DoB-weighted mean` =
+          DoB_Mean_R2 - DoB_Mean_R1,
+        
+        `Δ Degree of Belief` =
+          Mean_DoB_R2 - Mean_DoB_R1
+      ) %>%
+      rename(
+        `Equal-weight mean (R1)` = EqW_Mean_R1,
+        `Equal-weight mean (R2)` = EqW_Mean_R2,
+        
+        `DoB-weighted mean (R1)` = DoB_Mean_R1,
+        `DoB-weighted mean (R2)` = DoB_Mean_R2,
+        
+        `Average Degree of Belief (R1)` = Mean_DoB_R1,
+        `Average Degree of Belief (R2)` = Mean_DoB_R2
+      ) %>%
+    mutate(
+      across(where(is.numeric), ~ round(.x, 2))
+    )
   })
   
   # Summary table & download
