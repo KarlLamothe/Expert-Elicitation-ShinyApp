@@ -87,3 +87,9 @@ Changes to the application are tracked using Git, allowing previous implementati
 ## Contact
 
 **Karl Lamothe**: karl.lamothe@dfo-mpo.gc.ca
+
+## License
+
+This project is licensed under the LICENSE.
+
+Copyright (c) 2026 His Majesty the King in Right of Canada, as represented by the Minister of Fisheries and Oceans.
