@@ -412,8 +412,6 @@ Participant identifiers are used internally where required for analysis, includi
 
 Participant identifiers are not displayed in group-facing visualizations or input-validation messages. Individual expert estimates and distributions can therefore be examined without directly identifying participants in the displayed outputs.
 
-Participants are not required to respond to every question or participate in every elicitation round. The number of contributing participants may therefore differ among questions and rounds.
-
 ## Repository Structure
 
 ```text
@@ -432,6 +430,7 @@ App Version 2/
 │   ├── Plotting-functions.R
 │   └── Summarize-Pert.R
 │
+├── Google-Sheets-Setup.md
 └── README.md
 ```
 
