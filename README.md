@@ -7,7 +7,7 @@ The application provides tools for summarizing, aggregating, and visualizing exp
 This repository contains two versions of the application:
 
 - **Version 1:** the original expert-elicitation framework using equal-weight aggregation.
-- **Version 2:** an expanded framework incorporating expert Degree of Belief and optional multi-round elicitation.
+- **Version 2:** an expanded framework incorporating expert assessment confidence and optional multi-round elicitation.
 
 ## Application Versions
 
@@ -29,22 +29,22 @@ This version is retained to preserve the original implementation of the elicitat
 
 ---
 
-### Version 2: Degree of Belief and Multi-Round Elicitation
+### Version 2: Assessment Confidence and Multi-Round Elicitation
 
 `App Version 2` contains the current implementation of the application.
 
 Version 2 extends the base framework in two primary ways.
 
-#### Degree of Belief
+#### Assessment Confidence
 
-Experts can report a **Degree of Belief (DoB)** from 0 to 100 alongside their probability estimates.
+Experts can report an **Assessment Confidence (AC)** from 0 to 100 alongside their probability estimates.
 
-Degree of Belief is used to modify each expert's relative contribution to a DoB-weighted pooled distribution while leaving the expert's individual PERT distribution unchanged.
+Assessment confidence is used to modify each expert's relative contribution to a AC-weighted pooled distribution while leaving the expert's individual PERT distribution unchanged.
 
 The application calculates both:
 
 - an **equal-weight pooled distribution**; and
-- a **Degree-of-Belief-weighted pooled distribution**.
+- a **assessment confidence-weighted pooled distribution**.
 
 This allows the influence of expert confidence on the aggregated judgement to be evaluated directly.
 
@@ -54,9 +54,9 @@ Version 2 also supports an optional multi-round elicitation process.
 
 A typical two-round workflow consists of:
 
-1. **Round 1:** experts independently provide their initial estimates and Degree of Belief;
+1. **Round 1:** experts independently provide their initial estimates and assessment confidence;
 2. **Discussion:** participants review and discuss the range of elicited judgements, assumptions, evidence, and uncertainty;
-3. **Round 2:** experts independently retain or revise their estimates and Degree of Belief; and
+3. **Round 2:** experts independently retain or revise their estimates and assessment confidence; and
 4. **Comparison:** Round 1 and Round 2 results are analyzed separately and compared.
 
 The objective of the discussion is not to force consensus. Experts may retain their original estimates when discussion does not change their judgement.
@@ -64,8 +64,8 @@ The objective of the discussion is not to force consensus. Experts may retain th
 The application provides Question × Round visualizations and summarizes changes between rounds, including:
 
 - change in the equal-weight pooled mean;
-- change in the Degree-of-Belief-weighted pooled mean; and
-- change in average Degree of Belief.
+- change in the assessment confidence-weighted pooled mean; and
+- change in average assessment confidence.
 
 Multi-round analysis is optional. Version 2 continues to support single-round datasets, including datasets without a Round variable.
 
@@ -100,7 +100,7 @@ Expert-Elicitation-ShinyApp/
 | Version | Description | Status |
 |---------|-------------|--------|
 | Version 1 | Original expert elicitation framework using equal-weight aggregation | Archived |
-| Version 2 | Expert elicitation framework incorporating Degree of Belief and optional multi-round elicitation | Active development |
+| Version 2 | Expert elicitation framework incorporating assessment confidence and optional multi-round elicitation | Active development |
 
 ## Running the Application
 
