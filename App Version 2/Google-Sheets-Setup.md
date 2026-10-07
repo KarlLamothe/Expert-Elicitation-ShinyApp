@@ -121,14 +121,14 @@ Participant
 Lowest_Plausible_Pr
 Best_Guess_Pr
 Highest_Plausible_Pr
-Degree_of_Belief
+Assessment_Confidence
 Notes
 ```
 
 For example:
 
 ```text
-Question | Round | Participant | LPP  | BGP  | HPP  | DoB | Notes
+Question | Round | Participant | LPP  | BGP  | HPP  | AC  | Notes
 1        | 1     | P1          | 0.20 | 0.40 | 0.60 | 70  |
 2        | 1     | P1          | 0.30 | 0.55 | 0.75 | 80  |  
 3        | 1     | P1          | 0.15 | 0.30 | 0.50 | 60  |
@@ -138,7 +138,7 @@ The exact column names do not have to match these names because the Shiny applic
 
 `Round` is optional when only one elicitation round is being conducted.
 
-`Degree_of_Belief` is also optional when Degree-of-Belief weighting is not being used.
+`Assessment_Confidence` is also optional when assessment confidence weighting is not being used.
 
 `Notes` is also optional.
 
@@ -247,7 +247,7 @@ The resulting table should have one row for each submitted participant response.
 For example:
 
 ```text
-Question | Round | Participant | LPP  | BGP  | HPP  | DoB | Notes
+Question | Round | Participant | LPP  | BGP  | HPP  | AC  | Notes
 1        | 1     | P1          | 0.20 | 0.40 | 0.60 | 70  | 
 1        | 1     | P2          | 0.30 | 0.50 | 0.75 | 65  | Less certain
 1        | 1     | P3          | 0.25 | 0.45 | 0.65 | 80  | 
