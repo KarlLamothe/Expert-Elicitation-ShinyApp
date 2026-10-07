@@ -4,7 +4,7 @@
 
 Version 2 of the Expert Elicitation Shiny App extends the original expert-elicitation framework by incorporating:
 
-1. expert-reported **Degree of Belief (DoB)** into the aggregation of expert judgements; and
+1. expert-reported **Assessment Confidence (AC)** into the aggregation of expert judgements; and
 2. optional **multi-round elicitation**, allowing expert judgements to be compared before and after structured discussion.
 
 As in Version 1, experts characterize uncertainty by providing:
@@ -15,11 +15,13 @@ As in Version 1, experts characterize uncertainty by providing:
 
 These three estimates are used to represent each expert's judgement as a PERT distribution.
 
-Version 2 additionally allows each expert to report a Degree of Belief from **0 to 100**, representing the confidence the expert places in the elicited judgement. Degree of Belief modifies the relative contribution of each expert to the pooled distribution while leaving the expert's individual PERT distribution unchanged.
+Version 2 additionally allows each expert to report an assessment confidence from **0 to 100**, representing the self-reported confidence the expert places in the elicited judgement. Assessment confidence modifies the relative contribution of each expert to the pooled distribution while leaving the expert's individual PERT distribution unchanged.
 
-The application calculates both the original equal-weight aggregation and the Degree-of-Belief-weighted aggregation, allowing the influence of Degree of Belief on group-level results to be evaluated directly.
+The application calculates both the original equal-weight aggregation and the self-reported assessment confidence-weighted aggregation, allowing the influence of Assessment Confidence on group-level results to be evaluated directly.
 
 Version 2 can be used for either **single-round** or **multi-round** elicitation exercises.
+
+Terminology note: Version 2.0.0 used the term Degree of Belief for the self-reported confidence measure. Subsequent development uses Assessment Confidence to distinguish this measure from other uses of “degree of belief” and interval confidence in the structured expert-judgement literature. Legacy datasets containing a Degree_of_Belief column remain supported.
 
 ## Multi-Round Elicitation
 
@@ -32,7 +34,7 @@ Experts independently provide their initial:
 - lowest plausible estimate;
 - best-guess estimate;
 - highest plausible estimate; and
-- Degree of Belief.
+- Assessment Confidence.
 
 Individual and pooled results can then be summarized and visualized to support structured discussion.
 
@@ -49,7 +51,7 @@ Following discussion, experts independently provide a second set of:
 - lowest plausible estimates;
 - best-guess estimates;
 - highest plausible estimates; and
-- Degree of Belief values.
+- Assessment Confidence values.
 
 The application analyzes Round 1 and Round 2 separately and provides direct comparisons between rounds.
 
@@ -62,7 +64,7 @@ Round-specific outputs include:
 - individual expert estimates;
 - individual expert PERT distributions;
 - equal-weight pooled distributions;
-- Degree-of-Belief-weighted pooled distributions;
+- assessment confidence-weighted pooled distributions;
 - simulated mixture distributions;
 - cumulative distribution functions; and
 - summary statistics.
@@ -70,8 +72,8 @@ Round-specific outputs include:
 The application also calculates changes between Round 1 and Round 2, including:
 
 - change in the equal-weight pooled mean;
-- change in the Degree-of-Belief-weighted pooled mean; and
-- change in average Degree of Belief.
+- change in the assessment confidence-weighted pooled mean; and
+- change in average Assessment Confidence.
 
 Changes are calculated as:
 
@@ -115,7 +117,7 @@ where the default value of the PERT shape parameter is:
 
 The resulting Beta distribution is scaled to the expert's interval from `a` to `b`.
 
-Degree of Belief does **not** alter an expert's individual PERT distribution. An expert providing the same lowest plausible, best-guess, and highest plausible estimates will therefore have the same individual PERT distribution regardless of the reported Degree of Belief.
+Assessment Confidence does **not** alter an expert's individual PERT distribution. An expert providing the same lowest plausible, best-guess, and highest plausible estimates will therefore have the same individual PERT distribution regardless of the reported Assessment Confidence.
 
 ## Equal-Weight Aggregation
 
@@ -140,37 +142,37 @@ where `f_i(x)` represents the PERT probability density for expert `i`.
 
 The equal-weight pool provides a reference distribution representing the original aggregation approach.
 
-## Degree-of-Belief-Weighted Aggregation
+## Assessment confidence-Weighted Aggregation
 
-For the Degree-of-Belief-weighted pool, each expert's reported Degree of Belief is used as a relative aggregation weight.
+For the assessment confidence-weighted pool, each expert's reported assessment confidence is used as a relative aggregation weight.
 
 For expert `i`, the normalized weight is:
 
 ```math
 w_i =
-\frac{\mathrm{DoB}_i}
-{\sum_{j=1}^{n} \mathrm{DoB}_j}
+\frac{\mathrm{AC}_i}
+{\sum_{j=1}^{n} \mathrm{AC}_j}
 ```
 
-The Degree-of-Belief-weighted pooled density is:
+The assessment confidence-weighted pooled density is:
 
 ```math
-f_{\mathrm{DoB}}(x)
+f_{\mathrm{AC}}(x)
 =
 \sum_{i=1}^{n} w_i f_i(x)
 ```
 
-Experts reporting higher Degree of Belief therefore contribute more strongly to the pooled distribution than experts reporting lower Degree of Belief.
+Experts reporting higher Assessment Confidence therefore contribute more strongly to the pooled distribution than experts reporting lower Assessment Confidence.
 
-The weighting is relative within each question and round. For example, if three experts report Degree of Belief values of 100, 50, and 50, their normalized contributions to the pooled distribution are:
+The weighting is relative within each question and round. For example, if three experts report Assessment Confidence values of 100, 50, and 50, their normalized contributions to the pooled distribution are:
 
 - Expert 1: 0.50
 - Expert 2: 0.25
 - Expert 3: 0.25
 
-### Equal Degree of Belief
+### Equal Assessment Confidence
 
-If all experts report the same Degree of Belief, the normalized weights are equal. The Degree-of-Belief-weighted pool is therefore equivalent to the equal-weight pool regardless of whether the common Degree of Belief is high or low.
+If all experts report the same Assessment Confidence, the normalized weights are equal. The assessment confidence-weighted pool is therefore equivalent to the equal-weight pool regardless of whether the common Assessment Confidence is high or low.
 
 For example:
 
@@ -190,34 +192,34 @@ both produce normalized weights of:
 0.25, 0.25, 0.25, 0.25
 ```
 
-The current implementation therefore uses Degree of Belief to represent **relative confidence among experts**. The absolute magnitude of Degree of Belief does not independently increase or decrease the uncertainty of the pooled probability distribution.
+The current implementation therefore uses Assessment Confidence to represent **relative confidence among experts**. The absolute magnitude of Assessment Confidence does not independently increase or decrease the uncertainty of the pooled probability distribution.
 
-### Zero Degree of Belief
+### Zero Assessment Confidence
 
-An individual expert can report a Degree of Belief of zero. In this situation, the expert continues to contribute normally to the equal-weight pool but receives zero weight in the Degree-of-Belief-weighted pool.
+An individual expert can report an Assessment Confidence of zero. In this situation, the expert continues to contribute normally to the equal-weight pool but receives zero weight in the Assessment confidence-weighted pool.
 
-If **all participants report a Degree of Belief of zero for a question within a round**, a Degree-of-Belief-weighted distribution cannot be calculated because no relative weights can be assigned.
+If **all participants report an Assessment Confidence of zero for a question within a round**, a Assessment confidence-weighted distribution cannot be calculated because no relative weights can be assigned.
 
 In this situation:
 
 - the equal-weight results remain available;
-- Degree-of-Belief-weighted summaries are reported as unavailable; and
+- Assessment confidence-weighted summaries are reported as unavailable; and
 - the application displays a warning identifying the affected question and elicitation round.
 
-## Missing Degree of Belief
+## Missing Assessment Confidence
 
-Degree of Belief values are constrained to the range from 0 to 100.
+Assessment Confidence values are constrained to the range from 0 to 100.
 
-If a Degree of Belief value is missing, or if no Degree of Belief column is supplied, a value of **100** is assigned.
+If an Assessment Confidence value is missing, or if no Assessment Confidence column is supplied, a value of **100** is assigned.
 
-This implementation treats the absence of a Degree of Belief value as full acceptance of the expert's stated elicitation choices rather than interpreting a missing value as additional uncertainty.
+This implementation treats the absence of an Assessment Confidence value as full acceptance of the expert's stated elicitation choices rather than interpreting a missing value as additional uncertainty.
 
-## Comparing Equal-Weight and DoB-Weighted Results
+## Comparing Equal-Weight and AC-Weighted Results
 
 For each question and elicitation round, the application calculates both:
 
 - an equal-weight pooled distribution; and
-- a Degree-of-Belief-weighted pooled distribution.
+- an Assessment confidence-weighted pooled distribution.
 
 For each distribution, the application calculates:
 
@@ -226,34 +228,34 @@ For each distribution, the application calculates:
 - 5th percentile; and
 - 95th percentile.
 
-The influence of Degree-of-Belief weighting on the pooled mean is calculated as:
+The influence of assessment confidence weighting on the pooled mean is calculated as:
 
 ```math
-\mathrm{DoB\ Effect}
+\mathrm{AC\ Effect}
 =
-\mathrm{Mean}_{\mathrm{DoB}}
+\mathrm{Mean}_{\mathrm{AC}}
 -
 \mathrm{Mean}_{\mathrm{Equal}}
 ```
 
-A positive value indicates that Degree-of-Belief weighting shifts the pooled mean upward relative to equal weighting, while a negative value indicates a downward shift.
+A positive value indicates that assessment confidence weighting shifts the pooled mean upward relative to equal weighting, while a negative value indicates a downward shift.
 
-A value near zero indicates that Degree-of-Belief weighting has little influence on the pooled mean. This can occur when experts report similar Degree of Belief values or when differences in Degree of Belief are not systematically associated with differences in the elicited estimates.
+A value near zero indicates that assessment confidence weighting has little influence on the pooled mean. This can occur when experts report similar Assessment Confidence values or when differences in Assessment Confidence are not systematically associated with differences in the elicited estimates.
 
-## Degree of Belief Summaries
+## Assessment Confidence Summaries
 
 For each question and round, Version 2 reports:
 
-- mean Degree of Belief;
-- median Degree of Belief;
-- minimum Degree of Belief; and
-- maximum Degree of Belief.
+- mean Assessment Confidence;
+- median Assessment Confidence;
+- minimum Assessment Confidence; and
+- maximum Assessment Confidence.
 
-For multi-round elicitation, the application additionally reports the change in average Degree of Belief between rounds.
+For multi-round elicitation, the application additionally reports the change in average Assessment Confidence between rounds.
 
 ## Distribution Summaries
 
-The application uses Monte Carlo simulation to summarize the equal-weight and Degree-of-Belief-weighted mixtures.
+The application uses Monte Carlo simulation to summarize the equal-weight and assessment confidence-weighted mixtures.
 
 By default:
 
@@ -276,11 +278,11 @@ Version 2 supports:
 - optional single-round or multi-round elicitation;
 - generating individual expert PERT distributions;
 - calculating equal-weight linear opinion pools;
-- calculating Degree-of-Belief-weighted linear opinion pools;
-- comparing equal-weight and Degree-of-Belief-weighted results;
+- calculating assessment confidence-weighted linear opinion pools;
+- comparing equal-weight and assessment confidence-weighted results;
 - comparing Round 1 and Round 2 elicitation results;
-- summarizing Degree of Belief across participants;
-- calculating changes in average Degree of Belief between rounds;
+- summarizing Assessment Confidence across participants;
+- calculating changes in average Assessment Confidence between rounds;
 - displaying individual expert estimates by question and round;
 - displaying pooled probability distributions by question and round;
 - displaying simulated mixture distributions by question and round;
@@ -297,7 +299,7 @@ Version 2 supports multiple methods for supplying expert elicitation responses. 
 
 Built-in demonstration data can be selected within the application to explore the available analyses and visualizations.
 
-The demonstration dataset includes multiple questions, participants, Degree-of-Belief values, and two elicitation rounds.
+The demonstration dataset includes multiple questions, participants, assessment confidence values, and two elicitation rounds.
 
 ### CSV Upload
 
@@ -346,13 +348,13 @@ Participant
 Lowest_Plausible_Pr
 Best_Guess_Pr
 Highest_Plausible_Pr
-Degree_of_Belief
+Assessment_confidence
 ```
 
 For example:
 
 ```text
-Question  Round  Participant  LPP   BGP   HPP   DoB
+Question  Round  Participant  LPP   BGP   HPP   AC
 1         1      P1           0.20  0.40  0.60  70
 1         1      P2           0.30  0.50  0.75  65
 1         2      P1           0.25  0.50  0.70  85
@@ -379,13 +381,13 @@ The lowest and highest plausible probabilities must also define an interval with
 \mathrm{LPP} < \mathrm{HPP}
 ```
 
-If Degree of Belief is provided, valid values range from 0 to 100:
+If Assessment Confidence is provided, valid values range from 0 to 100:
 
 ```math
-0 \leq \mathrm{DoB} \leq 100
+0 \leq \mathrm{AC} \leq 100
 ```
 
-A missing Degree of Belief is permitted and is currently interpreted by the application as a Degree of Belief of 100.
+A missing Assessment Confidence is permitted and is currently interpreted by the application as an Assessment Confidence of 100.
 
 The application checks for:
 
@@ -395,7 +397,7 @@ The application checks for:
 - highest plausible probabilities that are greater than or equal to 1;
 - best-guess probabilities that fall outside the corresponding lowest and highest plausible estimates;
 - plausible intervals with zero or negative width;
-- Degree-of-Belief values outside the permitted range of 0 to 100;
+- Assessment confidence values outside the permitted range of 0 to 100;
 - missing Question or Participant fields within submitted responses;
 - missing Round values when a Round column is being used; and
 - duplicate responses from the same participant for the same Question and Round.
@@ -438,7 +440,7 @@ App Version 2/
 
 The `Functions and Helpers` directory contains supporting functions for processing, aggregation, simulation, and visualization.
 
-The `Data` directory contains demonstration data that can be used to explore both the Degree-of-Belief and multi-round functionality without using responses from an active elicitation exercise.
+The `Data` directory contains demonstration data that can be used to explore both the assessment confidence and multi-round functionality without using responses from an active elicitation exercise.
 
 ## Running Version 2
 
@@ -458,6 +460,6 @@ Version 2 is the current version of the Expert Elicitation Shiny App under activ
 
 The original implementation is retained as Version 1 to support reproducibility and comparison with subsequent developments.
 
-Version 2 currently extends the original framework through **Degree-of-Belief weighting** and **optional multi-round elicitation**, allowing changes in expert judgements and reported confidence following structured discussion to be examined explicitly.
+Version 2 currently extends the original framework through **Assessment confidence weighting** and **optional multi-round elicitation**, allowing changes in expert judgements and reported confidence following structured discussion to be examined explicitly.
 
 Version 2 can do everything that Version 1 did, AND MORE! And its prettier. So that's cool too :)
