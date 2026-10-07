@@ -89,11 +89,47 @@ build_hist_plot <- function(r,
   
   if ("Round" %in% names(samples_plot)) {
     
+    # Use 4 columns when facet_cols has not been explicitly supplied
+    n_facet_cols <- if (is.null(facet_cols)) 4 else facet_cols
+    
+    questions_order <- unique(as.character(samples_plot$Question))
+    rounds_order <- sort(unique(as.character(samples_plot$Round)))
+    
+    question_round_levels <- unlist(
+      lapply(
+        seq(1, length(questions_order), by = n_facet_cols),
+        function(i) {
+          
+          qs_block <- questions_order[
+            i:min(
+              i + n_facet_cols - 1,
+              length(questions_order)
+            )
+          ]
+          
+          unlist(
+            lapply(
+              rounds_order,
+              function(rnd) {
+                paste0(
+                  "Question ", qs_block,
+                  "\nRound ", rnd
+                )
+              }
+            )
+          )
+        }
+      )
+    )
+    
     samples_plot <- samples_plot %>%
       mutate(
-        Question_Round = paste0(
-          "Question ", Question,
-          "\nRound ", Round
+        Question_Round = factor(
+          paste0(
+            "Question ", Question,
+            "\nRound ", Round
+          ),
+          levels = question_round_levels
         )
       )
   }
@@ -301,11 +337,49 @@ build_individuals_plot <- function(df_raw,
         Lowest_Plausible_Pr  = suppressWarnings(as.numeric(.data[[lpp_col]])),
         Best_Guess_Pr        = suppressWarnings(as.numeric(.data[[bgp_col]])),
         Highest_Plausible_Pr = suppressWarnings(as.numeric(.data[[hpp_col]]))
-      ) %>%
+      )
+    
+    # Number of columns used for arranging question blocks
+    n_facet_cols <- if (is.null(facet_cols)) 4 else facet_cols
+    
+    questions_order <- unique(as.character(dfp$Question))
+    rounds_order <- sort(unique(as.character(dfp$Round)))
+    
+    question_round_levels <- unlist(
+      lapply(
+        seq(1, length(questions_order), by = n_facet_cols),
+        function(i) {
+          
+          qs_block <- questions_order[
+            i:min(
+              i + n_facet_cols - 1,
+              length(questions_order)
+            )
+          ]
+          
+          unlist(
+            lapply(
+              rounds_order,
+              function(rnd) {
+                paste0(
+                  "Question ", qs_block,
+                  "\nRound ", rnd
+                )
+              }
+            )
+          )
+        }
+      )
+    )
+    
+    dfp <- dfp %>%
       mutate(
-        Question_Round = paste0(
-          "Question ", Question,
-          "\nRound ", Round
+        Question_Round = factor(
+          paste0(
+            "Question ", Question,
+            "\nRound ", Round
+          ),
+          levels = question_round_levels
         )
       )
     

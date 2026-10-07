@@ -718,91 +718,156 @@ server <- function(input, output, session) {
       )
       
       # Create combined Question-Round labels for faceting
+      # Define Question x Round facet order so Round 2 appears
+      # directly below Round 1 for each question block
+      questions_order <- unique(as.character(summary_all$Question))
+      
+      rounds_order <- sort(
+        unique(as.character(summary_all$Round))
+      )
+      
+      question_round_levels <- unlist(
+        lapply(
+          seq(1, length(questions_order), by = 4),
+          function(i) {
+            
+            qs_block <- questions_order[
+              i:min(i + 3, length(questions_order))
+            ]
+            
+            unlist(
+              lapply(
+                rounds_order,
+                function(rnd) {
+                  paste0(
+                    "Question ", qs_block,
+                    "\nRound ", rnd
+                  )
+                }
+              )
+            )
+          }
+        )
+      )
+      
       cdf_mix_all <- cdf_mix_all %>%
         mutate(
-          Question_Round = paste0(
-            "Question ", Question,
-            "\nRound ", Round
+          Question_Round = factor(
+            paste0(
+              "Question ", Question,
+              "\nRound ", Round
+            ),
+            levels = question_round_levels
           )
         )
       
       cdf_mix_w_all <- cdf_mix_w_all %>%
         mutate(
-          Question_Round = paste0(
-            "Question ", Question,
-            "\nRound ", Round
+          Question_Round = factor(
+            paste0(
+              "Question ", Question,
+              "\nRound ", Round
+            ),
+            levels = question_round_levels
           )
         )
       
       cdf_emp_all <- cdf_emp_all %>%
         mutate(
-          Question_Round = paste0(
-            "Question ", Question,
-            "\nRound ", Round
+          Question_Round = factor(
+            paste0(
+              "Question ", Question,
+              "\nRound ", Round
+            ),
+            levels = question_round_levels
           )
         )
       
       cdf_emp_w_all <- cdf_emp_w_all %>%
         mutate(
-          Question_Round = paste0(
-            "Question ", Question,
-            "\nRound ", Round
+          Question_Round = factor(
+            paste0(
+              "Question ", Question,
+              "\nRound ", Round
+            ),
+            levels = question_round_levels
           )
         )
       
       cdf_beta_all <- cdf_beta_all %>%
         mutate(
-          Question_Round = paste0(
-            "Question ", Question,
-            "\nRound ", Round
+          Question_Round = factor(
+            paste0(
+              "Question ", Question,
+              "\nRound ", Round
+            ),
+            levels = question_round_levels
           )
         )
       
       cdf_beta_w_all <- cdf_beta_w_all %>%
         mutate(
-          Question_Round = paste0(
-            "Question ", Question,
-            "\nRound ", Round
+          Question_Round = factor(
+            paste0(
+              "Question ", Question,
+              "\nRound ", Round
+            ),
+            levels = question_round_levels
           )
         )
       
       cdf_ind_all <- cdf_ind_all %>%
         mutate(
-          Question_Round = paste0(
-            "Question ", Question,
-            "\nRound ", Round
+          Question_Round = factor(
+            paste0(
+              "Question ", Question,
+              "\nRound ", Round
+            ),
+            levels = question_round_levels
           )
         )
       
       dens_mix_all <- dens_mix_all %>%
         mutate(
-          Question_Round = paste0(
-            "Question ", Question,
-            "\nRound ", Round
+          Question_Round = factor(
+            paste0(
+              "Question ", Question,
+              "\nRound ", Round
+            ),
+            levels = question_round_levels
           )
         )
       
       dens_mix_w_all <- dens_mix_w_all %>%
         mutate(
-          Question_Round = paste0(
-            "Question ", Question,
-            "\nRound ", Round
+          Question_Round = factor(
+            paste0(
+              "Question ", Question,
+              "\nRound ", Round
+            ),
+            levels = question_round_levels
           )
         )
       
       dens_ind_all <- dens_ind_all %>%
         mutate(
-          Question_Round = paste0(
-            "Question ", Question,
-            "\nRound ", Round
+          Question_Round = factor(
+            paste0(
+              "Question ", Question,
+              "\nRound ", Round
+            ),
+            levels = question_round_levels
           )
         )
       
       beta_all <- beta_all %>%
         mutate(
-          Question_Round = paste0(
-            "Question ", Question,
-            "\nRound ", Round
+          Question_Round = factor(
+            paste0(
+              "Question ", Question,
+              "\nRound ", Round
+            ),
+            levels = question_round_levels
           )
         )
     }
@@ -1317,12 +1382,12 @@ server <- function(input, output, session) {
     fluidRow(
       # Pooled mean
       column(
-        2,
+        4,
         div(
           style = card_style,
           div(
             style = value_style(delta_colour(eqw_delta)),
-            sprintf("%+.2f", eqw_delta)
+            sprintf("%+.3f", eqw_delta)
           ),
           div(
             style = label_style,
@@ -1333,12 +1398,12 @@ server <- function(input, output, session) {
       
       # DoB weighted mean
       column(
-        2,
+        4,
         div(
           style = card_style,
           div(
             style = value_style(delta_colour(dob_delta)),
-            sprintf("%+.2f", dob_delta)
+            sprintf("%+.3f", dob_delta)
           ),
           div(
             style = label_style,
@@ -1349,7 +1414,7 @@ server <- function(input, output, session) {
       
       # Mean Degree of Belief
       column(
-        2,
+        4,
         div(
           style = card_style,
           div(
@@ -1366,40 +1431,48 @@ server <- function(input, output, session) {
         )
       ),
       
-      #Round 1 mean
+      # Equal-weight means across rounds
       column(
-        2,
+        4,
         div(
           style = card_style,
           div(
             style = value_style("#245674"),
-            sprintf("%.2f", s1$EqW_Mean)
+            paste0(
+              sprintf("%.3f", s1$EqW_Mean),
+              " \u2192 ",
+              sprintf("%.3f", s2$EqW_Mean)
+            )
           ),
           div(
             style = label_style,
-            "Equal-weight mean (R1)"
+            "Equal-weight mean (R1 \u2192 R2)"
           )
         )
       ),
       
-      # Round 2 mean
+      # DoB-weighted means across rounds
       column(
-        2,
+        4,
         div(
           style = card_style,
           div(
             style = value_style("#245674"),
-            sprintf("%.2f", s2$EqW_Mean)
+            paste0(
+              sprintf("%.3f", s1$DoB_Mean),
+              " \u2192 ",
+              sprintf("%.3f", s2$DoB_Mean)
+            )
           ),
           div(
             style = label_style,
-            "Equal-weight mean (R2)"
+            "DoB-weighted mean (R1 \u2192 R2)"
           )
         )
       ),
       
       # Number of experts
-      column(2,div(style = card_style,
+      column(4,div(style = card_style,
                    div(
                      style = value_style("#245674"), s$N_Participants),
                    div(style = label_style,"Experts"))))
