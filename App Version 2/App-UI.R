@@ -59,25 +59,74 @@ ui <- fluidPage(
       # ============================================================
       # ANALYSIS OPTIONS
       # ============================================================
-      h4("Analysis Options"),
-      checkboxInput("show_individual", "Show individual expert curves", TRUE),
-      checkboxInput("show_dob_mix", "Show Degree-of-Belief weighted mixture",TRUE),
-      checkboxInput("show_beta", "Show Beta approximation", FALSE),
-      tags$details(tags$summary(style = "cursor: pointer; font-weight: 600;",
-                                "Advanced analysis settings"),
+      tags$details(
+        tags$summary(
+          style = "cursor: pointer; font-weight: 600; font-size: 18px;",
+          "Analysis Options"
+        ),
+        
         br(),
-        numericInput("lambda", "PERT shape (lambda)", value = 4, min = 1, step = 1),
-        numericInput("Nsim", "Mixture draws", value = 10000, min = 1000, step = 1000)),
+        
+        checkboxInput(
+          "show_individual",
+          "Show individual expert curves",
+          TRUE
+        ),
+        
+        checkboxInput(
+          "show_dob_mix",
+          "Show Degree-of-Belief weighted mixture",
+          TRUE
+        ),
+        
+        checkboxInput(
+          "show_beta",
+          "Show Beta approximation",
+          FALSE
+        ),
+        
+        tags$details(
+          tags$summary(
+            style = "cursor: pointer; font-weight: 600;",
+            "Advanced analysis settings"
+          ),
+          
+          br(),
+          
+          numericInput(
+            "lambda",
+            "PERT shape (lambda)",
+            value = 4,
+            min = 1,
+            step = 1
+          ),
+          
+          numericInput(
+            "Nsim",
+            "Mixture draws",
+            value = 10000,
+            min = 1000,
+            step = 1000
+          )
+        )
+      ),
+      
       br(),
-      actionButton("run", "Run / Refresh Analysis", class = "btn-primary",
-                   width = "100%"),
+      
+      actionButton(
+        "run",
+        "Run / Refresh Analysis",
+        class = "btn-primary",
+        width = "100%"
+      ),
+      
       tags$hr(),
       
       # ============================================================
       # ADVANCED COLUMN MAPPING
       # ============================================================
       tags$details(
-        tags$summary(style = "cursor: pointer; font-weight: 600;",
+        tags$summary(style = "cursor: pointer; font-weight: 600; font-size: 18px;",
                      "Column Mapping"),
         br(),
         helpText(
@@ -88,7 +137,7 @@ ui <- fluidPage(
       # ============================================================
       # DOWNLOADS
       # ============================================================
-      tags$details(tags$summary(style = "cursor: pointer; font-weight: 600;",
+      tags$details(tags$summary(style = "cursor: pointer; font-weight: 600; font-size: 18px;",
                                 "Downloads"),
         br(),
         downloadButton("download_summary", "Summary CSV",
