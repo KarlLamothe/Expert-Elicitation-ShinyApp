@@ -91,6 +91,7 @@ Expert-Elicitation-ShinyApp/
     ├── Run-Application.R
     ├── Data/
     ├── Functions and Helpers/
+    ├── Google-Sheets-Setup.md
     └── README.md
 ```
 
