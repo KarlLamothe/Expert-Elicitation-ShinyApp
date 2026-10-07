@@ -6,7 +6,7 @@ source("Functions and Helpers/Summarize-Pert.R")
 source("Functions and Helpers/Plotting-functions.R")
 source("Data/demo_data.R")
 
-gs4_auth(email = "XXXXXX")
+gs4_auth(email = "YOUR_GOOGLE_EMAIL")
 
 source("App-UI.R")
 source("App-Server.R")

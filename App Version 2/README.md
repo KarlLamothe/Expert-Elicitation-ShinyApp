@@ -318,13 +318,20 @@ The CSV workflow allows the application to be used without Google Sheets or Goog
 
 ### Google Sheets
 
-Expert responses can optionally be retrieved from Google Sheets.
+Google Sheets can optionally be used as a live data source during an elicitation exercise. This allows facilitators to refresh the analysis as participants submit or revise their responses.
 
-This workflow may be useful during live elicitation exercises where responses are collected continuously and the facilitator wishes to refresh the analysis as new responses become available.
+For elicitation exercises where participants should not view one another's individual responses, separate participant Google spreadsheets can be dynamically linked to a consolidated facilitator spreadsheet.
 
-Select **Google Sheets** as the data source and use **Get Latest Expert Responses** to retrieve the current responses.
+Google Sheets requires initial authentication and configuration.
 
-The analytical workflow is otherwise identical regardless of whether responses are supplied using demonstration data, a CSV file, or Google Sheets.
+See the Google-Sheets-Setup.md for instructions covering:
+
+- Google authentication and `gs4_auth()`;
+- OAuth token handling;
+- facilitator spreadsheet configuration;
+- separate participant response spreadsheets;
+- dynamically linking spreadsheets using `IMPORTRANGE()`; and
+- recommended access and privacy practices.
 
 ## Input Data
 
