@@ -210,9 +210,7 @@ In this situation:
 
 Assessment confidence values are constrained to the range from 0 to 100.
 
-If an assessment confidence value is missing, or if no Assessment Confidence column is supplied, a value of **100** is assigned.
-
-This implementation treats the absence of an assessment confidence value as full acceptance of the expert's stated elicitation choices rather than interpreting a missing value as additional uncertainty.
+If an assessment confidence value is missing, or if no Assessment Confidence column is supplied, missing assessment confidence values are not imputed. The associated probability assessment remains included in the equal-weight pool but is excluded from the assessment confidence-weighted pool. Confidence-weighted aggregation is calculated only when at least two participants report assessment confidence and the sum of the reported values is greater than zero.
 
 ## Comparing Equal-Weight and AC-Weighted Results
 

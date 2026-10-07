@@ -390,28 +390,110 @@ server <- function(input, output, session) {
     }
     
     # -------------------------------------------------------------------------
-    # Identify questions/rounds for which DoB weighting is unavailable
+    # Identify questions/rounds for which Assessment Confidence weighting
+    # is unavailable
     # -------------------------------------------------------------------------
     
-    if (is.null(round_col_val)) {
+    # Only assess AC availability when an AC column was supplied
+    if (!is.null(dob_col_val)) {
       
-      # Single-round data
-      dob_unavailable <- vapply(
-        res_list,
-        function(x) !isTRUE(x$dob_available),
-        logical(1)
-      )
+      affected_fewer_than_two <- character(0)
+      affected_all_zero <- character(0)
       
-      if (any(dob_unavailable)) {
+      if (is.null(round_col_val)) {
         
-        affected_questions <- names(res_list)[dob_unavailable]
+        # ==============================================================
+        # SINGLE-ROUND DATA
+        # ==============================================================
+        
+        for (q in names(res_list)) {
+          
+          result_q <- res_list[[q]]
+          
+          if (!isTRUE(result_q$AC_available)) {
+            
+            if (identical(
+              result_q$AC_unavailable_reason,
+              "fewer_than_two"
+            )) {
+              
+              affected_fewer_than_two <- c(
+                affected_fewer_than_two,
+                paste0("Question ", q)
+              )
+              
+            } else if (identical(
+              result_q$AC_unavailable_reason,
+              "all_zero"
+            )) {
+              
+              affected_all_zero <- c(
+                affected_all_zero,
+                paste0("Question ", q)
+              )
+            }
+          }
+        }
+        
+      } else {
+        
+        # ==============================================================
+        # MULTI-ROUND DATA
+        # ==============================================================
+        
+        for (q in names(res_list)) {
+          
+          for (r in names(res_list[[q]])) {
+            
+            result_qr <- res_list[[q]][[r]]
+            
+            if (!isTRUE(result_qr$AC_available)) {
+              
+              label <- paste0(
+                "Question ", q,
+                " (Round ", r, ")"
+              )
+              
+              if (identical(
+                result_qr$AC_unavailable_reason,
+                "fewer_than_two"
+              )) {
+                
+                affected_fewer_than_two <- c(
+                  affected_fewer_than_two,
+                  label
+                )
+                
+              } else if (identical(
+                result_qr$AC_unavailable_reason,
+                "all_zero"
+              )) {
+                
+                affected_all_zero <- c(
+                  affected_all_zero,
+                  label
+                )
+              }
+            }
+          }
+        }
+      }
+      
+      
+      # ---------------------------------------------------------------
+      # Fewer than two Assessment Confidence responses
+      # ---------------------------------------------------------------
+      
+      if (length(affected_fewer_than_two) > 0) {
         
         showNotification(
           paste0(
-            "AC-weighted results are unavailable for question",
-            if (length(affected_questions) > 1) "s " else " ",
-            paste(affected_questions, collapse = ", "),
-            " because all participants reported an assessment confidence of 0. ",
+            "Assessment Confidence-weighted results are unavailable for ",
+            paste(
+              affected_fewer_than_two,
+              collapse = ", "
+            ),
+            " because fewer than two participants provided Assessment Confidence. ",
             "Equal-weight results remain available."
           ),
           type = "warning",
@@ -419,31 +501,20 @@ server <- function(input, output, session) {
         )
       }
       
-    } else {
+      # ---------------------------------------------------------------
+      # All reported Assessment Confidence values are zero
+      # ---------------------------------------------------------------
       
-      # Multi-round data
-      affected <- character(0)
-      
-      for (q in names(res_list)) {
-        
-        for (r in names(res_list[[q]])) {
-          
-          if (!isTRUE(res_list[[q]][[r]]$dob_available)) {
-            affected <- c(
-              affected,
-              paste0("Question ", q, " (Round ", r, ")")
-            )
-          }
-        }
-      }
-      
-      if (length(affected) > 0) {
+      if (length(affected_all_zero) > 0) {
         
         showNotification(
           paste0(
-            "DoB-weighted results are unavailable for ",
-            paste(affected, collapse = ", "),
-            " because all participants reported an assessment confidence of 0. ",
+            "Assessment Confidence-weighted results are unavailable for ",
+            paste(
+              affected_all_zero,
+              collapse = ", "
+            ),
+            " because all reported Assessment Confidence values are 0. ",
             "Equal-weight results remain available."
           ),
           type = "warning",
@@ -452,7 +523,6 @@ server <- function(input, output, session) {
       }
     }
     
-    # Bind everything
     # -------------------------------------------------------------------------
     # Bind results for plotting, summaries, and downloads
     # -------------------------------------------------------------------------
@@ -1473,7 +1543,7 @@ server <- function(input, output, session) {
         )
       ),
       
-      # DoB-weighted means across rounds
+      # AC-weighted means across rounds
       column(
         4,
         div(

@@ -7,7 +7,7 @@ summarize_question_pert <- function(df,
                                     lpp_col = "Lowest_Plausible_Pr",
                                     bgp_col = "Best_Guess_Pr",
                                     hpp_col = "Highest_Plausible_Pr",
-                                    dob_col = "Degree_of_Belief",          
+                                    dob_col = "Assessment_Confidence",          
                                     lambda  = 4,
                                     Nsim    = 40000,
                                     grid    = seq(0, 1, length.out = 1000),
@@ -34,26 +34,49 @@ summarize_question_pert <- function(df,
       beta  = 1 + lambda * (b - m) / (b - a)
     )
   
-  # Degree of Belief weights:
-  # If a DoB column is provided, parse it on a 0-100 scale.
-  # When DoB is missing, full confidence (100) is assumed.
+  # Assessment Confidence:
+  # Missing values remain missing and are excluded from the
+  # Assessment Confidence-weighted pool.
   if (!is.null(dob_col) && dob_col %in% names(df)) {
     raw_dob <- suppressWarnings(as.numeric(df[[dob_col]]))
+    # Values have already been validated by the application,
+    # but retain bounds defensively.
     raw_dob <- pmax(pmin(raw_dob, 100), 0)
-    raw_dob[is.na(raw_dob)] <- 100
     df2$dob <- raw_dob
   } else {
-    df2$dob <- 100
+    # No Assessment Confidence data were supplied
+    df2$dob <- NA_real_
   }
   
-  # Determine whether DoB weighting can be calculated
-  total_dob <- sum(df2$dob, na.rm = TRUE)
-  dob_available <- is.finite(total_dob) && total_dob > 0
+  # Identify participants who supplied Assessment Confidence
+  AC_observed <- !is.na(df2$dob)
+  N_AC <- sum(AC_observed)
+  total_ac <- sum(df2$dob[AC_observed], na.rm = TRUE)
   
-  if (dob_available) {
-    w <- df2$dob / total_dob
+  # Assessment Confidence weighting requires:
+  #   1. at least two participants with observed AC; and
+  #   2. at least one positive AC value.
+  AC_available <- (N_AC >= 2 &&
+      is.finite(total_ac) &&
+      total_ac > 0)
+  
+  # Reason Assessment Confidence weighting is unavailable
+  AC_unavailable_reason <- if (AC_available) {
+    NA_character_
+  } else if (N_AC < 2) {
+    "fewer_than_two"
+  } else if (total_ac <= 0) {
+    "all_zero"
   } else {
-    w <- rep(NA_real_, nrow(df2))
+    "unknown"
+  }
+  
+  # Initialize weights as unavailable
+  w <- rep(NA_real_, nrow(df2))
+  if (AC_available) {
+    # Participants with missing AC do not enter the
+    # Assessment Confidence-weighted pool.
+    w[AC_observed] <- df2$dob[AC_observed] / total_ac
   }
   
   # Equal-weight mixture
@@ -67,14 +90,16 @@ summarize_question_pert <- function(df,
       df2$beta[idx_eq]
     )
   
-  # DoB-weighted mixture
-  if (dob_available) {
+  # Assessment Confidence-weighted mixture
+  if (AC_available) {
     
-    idx_w <- sample.int(
-      nrow(df2),
+    ac_idx <- which(AC_observed)
+    
+    idx_w <- sample(
+      ac_idx,
       Nsim,
       replace = TRUE,
-      prob = w
+      prob = w[ac_idx]
     )
     
     samples_w <- df2$a[idx_w] +
@@ -114,22 +139,14 @@ summarize_question_pert <- function(df,
       .groups = "drop"
     )
   
-  # DoB-weighted Linear Opinion Pool
-  if (dob_available) {
-    
+  # AC-weighted Linear Opinion Pool
+  if (AC_available) {
     dens_mixture_w <- dens_individual %>%
+      filter(!is.na(dob)) %>%
       group_by(p) %>%
-      summarise(
-        density = weighted.mean(density, w = dob),
-        .groups = "drop"
-      )
-    
+      summarise(density = weighted.mean(density, w = dob), .groups = "drop")
   } else {
-    
-    dens_mixture_w <- tibble(
-      p = grid,
-      density = NA_real_
-    )
+    dens_mixture_w <- tibble(p = grid, density = NA_real_)
   }
   
   # Moment-matched Beta: equal-weight
@@ -140,14 +157,9 @@ summarize_question_pert <- function(df,
     v_hat <- 1e-6
   }
   
-  ab_term <- max(
-    m_hat * (1 - m_hat) / v_hat - 1,
-    2
-  )
-  
+  ab_term <- max(m_hat * (1 - m_hat) / v_hat - 1, 2)
   alpha_star <- m_hat * ab_term
   beta_star  <- (1 - m_hat) * ab_term
-  
   grid_beta <- seq(0, 1, length.out = 1000)
   
   df_beta_fit <- data.frame(
@@ -155,12 +167,10 @@ summarize_question_pert <- function(df,
     density = dbeta(
       grid_beta,
       alpha_star,
-      beta_star
-    )
-  )
+      beta_star))
   
-  # Moment-matched Beta: DoB-weighted
-  if (dob_available) {
+  # Moment-matched Beta: AC-weighted
+  if (AC_available) {
     
     m_hat_w <- mean(samples_w)
     v_hat_w <- var(samples_w)
@@ -213,46 +223,68 @@ summarize_question_pert <- function(df,
     EqW_5th    = as.numeric(quantile(samples_eq, 0.05)),
     EqW_95th   = as.numeric(quantile(samples_eq, 0.95)),
     
-    # DoB-weighted columns
-    DoB_Mean = if (dob_available) {
+    # AC-weighted columns
+    DoB_Mean = if (AC_available) {
       m_hat_w
     } else {
       NA_real_
     },
     
-    DoB_Median = if (dob_available) {
+    DoB_Median = if (AC_available) {
       median(samples_w)
     } else {
       NA_real_
     },
     
-    DoB_5th = if (dob_available) {
+    DoB_5th = if (AC_available) {
       as.numeric(quantile(samples_w, 0.05))
     } else {
       NA_real_
     },
     
-    DoB_95th = if (dob_available) {
+    DoB_95th = if (AC_available) {
       as.numeric(quantile(samples_w, 0.95))
     } else {
       NA_real_
     },
     
-    # Degree of Belief summaries
-    Mean_DoB   = mean(df2$dob, na.rm = TRUE),
-    Median_DoB = median(df2$dob, na.rm = TRUE),
-    Min_DoB    = min(df2$dob, na.rm = TRUE),
-    Max_DoB    = max(df2$dob, na.rm = TRUE),
+    # assessment confidence summaries
+    Mean_DoB = if (N_AC > 0) {
+      mean(df2$dob, na.rm = TRUE)
+    } else {
+      NA_real_
+    },
     
-    # Difference caused by DoB weighting
-    DoB_Effect = if (dob_available) {
+    Median_DoB = if (N_AC > 0) {
+      median(df2$dob, na.rm = TRUE)
+    } else {
+      NA_real_
+    },
+    
+    Min_DoB = if (N_AC > 0) {
+      min(df2$dob, na.rm = TRUE)
+    } else {
+      NA_real_
+    },
+    
+    Max_DoB = if (N_AC > 0) {
+      max(df2$dob, na.rm = TRUE)
+    } else {
+      NA_real_
+    },
+    
+    # Difference caused by AC weighting
+    DoB_Effect = if (AC_available) {
       m_hat_w - m_hat
     } else {
       NA_real_
     },
     
-    # Whether DoB results are available
-    DoB_Available = dob_available,
+    # Whether AC results are available
+    AC_available = AC_available,
+    AC_unavailable_reason = AC_unavailable_reason,
+    N_AC = N_AC,
+    AC_Response_Rate = N_AC / nrow(df2),
     
     # Shared
     Hard_Union_LPP = min(df2$a),
@@ -286,22 +318,14 @@ summarize_question_pert <- function(df,
       .groups = "drop"
     )
   
-  # DoB-weighted CDF mixture
-  if (dob_available) {
-    
+  # AC-weighted CDF mixture
+  if (AC_available) {
     cdf_mixture_w <- cdf_individual %>%
+      filter(!is.na(dob)) %>%
       group_by(p) %>%
-      summarise(
-        cdf = weighted.mean(cdf, w = dob),
-        .groups = "drop"
-      )
-    
+      summarise(cdf = weighted.mean( cdf, w = dob), .groups = "drop")
   } else {
-    
-    cdf_mixture_w <- tibble(
-      p = grid,
-      cdf = NA_real_
-    )
+    cdf_mixture_w <- tibble(p = grid,cdf = NA_real_)
   }
   
   # Empirical equal-weight CDF
@@ -312,8 +336,8 @@ summarize_question_pert <- function(df,
     cdf = ec(grid)
   )
   
-  # Empirical DoB-weighted CDF
-  if (dob_available) {
+  # Empirical AC-weighted CDF
+  if (AC_available) {
     
     ec_w <- ecdf(samples_w)
     
@@ -340,7 +364,7 @@ summarize_question_pert <- function(df,
     )
   )
   
-  if (dob_available) {
+  if (AC_available) {
     
     cdf_beta_fit_w <- data.frame(
       p = grid_beta,
@@ -416,6 +440,8 @@ summarize_question_pert <- function(df,
       beta  = beta_star_w
     ),
     
-    dob_available = dob_available
+    AC_available = AC_available,
+    N_AC = N_AC,
+    AC_unavailable_reason = AC_unavailable_reason
   )
 }
