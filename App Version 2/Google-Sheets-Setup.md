@@ -42,7 +42,7 @@ App Version 2/Run-Application.R
 Locate:
 
 ```r
-gs4_auth(email = "XXXXXX")
+gs4_auth(email = "YOUR_GOOGLE_EMAIL")
 ```
 
 Replace `XXXXXX` with the email address of the Google account that has access to the facilitator spreadsheet.
