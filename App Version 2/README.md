@@ -258,7 +258,7 @@ The application uses Monte Carlo simulation to summarize the equal-weight and De
 By default:
 
 ```text
-Nsim = 40,000
+Nsim = 10,000
 ```
 
 samples are generated for each aggregation approach.
