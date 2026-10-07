@@ -6,7 +6,7 @@ demo_df <- cbind.data.frame(
   Participant = rep(c("P1","P2",'P3','P4','P5','P6'), 8),
   Lowest_Plausible_Pr = c(0.14,0.17,0.25,0.17,0.16,0.25,0.54,0.37,0.40,0.51,
                           0.56,0.45,0.24,0.26,0.22,0.35,0.29,0.20,0.03,0.06,
-                          0.00,0.04,0.00,0.02,0.34,0.29,0.31,0.36,0.29,0.38,
+                          0.01,0.04,0.01,0.02,0.34,0.29,0.31,0.36,0.29,0.38,
                           0.51,0.51,0.54,0.55,0.56,0.49,0.31,0.32,0.31,0.31,
                           0.25,0.25,0.03,0.20,0.16,0.06,0.11,0.09),
   Best_Guess_Pr = c(0.23,0.28,0.30,0.23,0.26,0.32,0.64,0.43,0.44,0.62,0.65,
@@ -44,8 +44,8 @@ bg_change <- sample(
   replace = TRUE)
 
 demo_round2$Best_Guess_Pr <- pmin(
-  pmax(demo_round2$Best_Guess_Pr + bg_change, 0),
-  1)
+  pmax(demo_round2$Best_Guess_Pr + bg_change, 0.01),
+  0.99)
 
 # Allow plausible bounds to shift somewhat between rounds
 lpp_change <- sample(
@@ -59,11 +59,11 @@ hpp_change <- sample(
   replace = TRUE)
 
 demo_round2$Lowest_Plausible_Pr <- pmin(
-  pmax(demo_round2$Lowest_Plausible_Pr + lpp_change, 0),
+  pmax(demo_round2$Lowest_Plausible_Pr + lpp_change, 0.01),
   demo_round2$Best_Guess_Pr)
 
 demo_round2$Highest_Plausible_Pr <- pmax(
-  pmin(demo_round2$Highest_Plausible_Pr + hpp_change, 1),
+  pmin(demo_round2$Highest_Plausible_Pr + hpp_change, 0.99),
   demo_round2$Best_Guess_Pr)
 
 # Allow Degree of Belief to change following discussion
