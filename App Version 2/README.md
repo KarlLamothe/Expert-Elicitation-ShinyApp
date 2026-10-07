@@ -459,3 +459,5 @@ Version 2 is the current version of the Expert Elicitation Shiny App under activ
 The original implementation is retained as Version 1 to support reproducibility and comparison with subsequent developments.
 
 Version 2 currently extends the original framework through **Degree-of-Belief weighting** and **optional multi-round elicitation**, allowing changes in expert judgements and reported confidence following structured discussion to be examined explicitly.
+
+Version 2 can do everything that Version 1 did, AND MORE! And its prettier. So that's cool too :)
