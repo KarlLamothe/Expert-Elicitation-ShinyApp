@@ -269,6 +269,9 @@ The application additionally generates moment-matched Beta distributions based o
 
 Version 2 supports:
 
+- selecting between demonstration data, CSV upload, and Google Sheets as input sources;
+- downloading a CSV response template;
+- validating submitted response data before analysis;
 - importing and processing expert elicitation responses;
 - optional single-round or multi-round elicitation;
 - generating individual expert PERT distributions;
@@ -285,6 +288,43 @@ Version 2 supports:
 - retrieving updated expert responses during an elicitation exercise;
 - summarizing Round 1 versus Round 2 changes; and
 - exporting summaries and visualizations.
+
+## Input Methods
+
+Version 2 supports multiple methods for supplying expert elicitation responses. Google Sheets is optional and is not required to use the application.
+
+### Demonstration Data
+
+Built-in demonstration data can be selected within the application to explore the available analyses and visualizations.
+
+The demonstration dataset includes multiple questions, participants, Degree-of-Belief values, and two elicitation rounds.
+
+### CSV Upload
+
+Expert responses can be supplied directly using a CSV file.
+
+A response template can be downloaded from within the application using **Download Response Template**. The template can be opened and edited using spreadsheet software such as Microsoft Excel.
+
+After completing the template:
+
+1. Save the response data as a CSV file.
+2. Select **Upload CSV** as the data source.
+3. Upload the completed response file.
+4. Confirm that the input columns have been mapped correctly.
+5. Select the desired question or questions.
+6. Select **Run / Refresh Analysis**.
+
+The CSV workflow allows the application to be used without Google Sheets or Google authentication.
+
+### Google Sheets
+
+Expert responses can optionally be retrieved from Google Sheets.
+
+This workflow may be useful during live elicitation exercises where responses are collected continuously and the facilitator wishes to refresh the analysis as new responses become available.
+
+Select **Google Sheets** as the data source and use **Get Latest Expert Responses** to retrieve the current responses.
+
+The analytical workflow is otherwise identical regardless of whether responses are supplied using demonstration data, a CSV file, or Google Sheets.
 
 ## Input Data
 
@@ -315,6 +355,57 @@ Question  Round  Participant  LPP   BGP   HPP   DoB
 The column-mapping controls within the application allow equivalent columns with different names to be assigned to the appropriate application variables.
 
 The Round column is optional. If no Round column is selected, the data are analyzed using the single-round workflow.
+
+## Input Data Validation
+
+Before an analysis is run, Version 2 checks the submitted response data for common input problems.
+
+For each submitted expert response, the probability estimates must satisfy:
+
+```math
+0 < \mathrm{LPP} \leq \mathrm{BGP} \leq \mathrm{HPP} < 1
+```
+
+The lowest and highest plausible probabilities must also define an interval with positive width:
+
+```math
+\mathrm{LPP} < \mathrm{HPP}
+```
+
+If Degree of Belief is provided, valid values range from 0 to 100:
+
+```math
+0 \leq \mathrm{DoB} \leq 100
+```
+
+A missing Degree of Belief is permitted and is currently interpreted by the application as a Degree of Belief of 100.
+
+The application checks for:
+
+- missing probability estimates within a submitted response;
+- non-numeric probability estimates;
+- lowest plausible probabilities that are less than or equal to 0;
+- highest plausible probabilities that are greater than or equal to 1;
+- best-guess probabilities that fall outside the corresponding lowest and highest plausible estimates;
+- plausible intervals with zero or negative width;
+- Degree-of-Belief values outside the permitted range of 0 to 100;
+- missing Question or Participant fields within submitted responses;
+- missing Round values when a Round column is being used; and
+- duplicate responses from the same participant for the same Question and Round.
+
+Participants are **not required to respond to every question or participate in every elicitation round**. Differences in participant numbers among questions or rounds are therefore permitted.
+
+When invalid data are identified, the analysis is stopped and the application displays a validation message identifying the affected **Question, Round, and response row**. Participant identifiers are not displayed in validation messages.
+
+This allows problems in the source data to be corrected before analysis while avoiding the silent modification or reinterpretation of submitted expert judgements.
+
+## Participant Identifiers
+
+Participant identifiers are used internally where required for analysis, including distinguishing individual expert responses, detecting duplicate responses, matching responses across elicitation rounds, and determining participant numbers.
+
+Participant identifiers are not displayed in group-facing visualizations or input-validation messages. Individual expert estimates and distributions can therefore be examined without directly identifying participants in the displayed outputs.
+
+Participants are not required to respond to every question or participate in every elicitation round. The number of contributing participants may therefore differ among questions and rounds.
 
 ## Repository Structure
 

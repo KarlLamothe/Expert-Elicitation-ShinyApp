@@ -8,10 +8,46 @@ ui <- fluidPage(
   sidebarLayout(
     sidebarPanel(
       h4("Data"),
-      checkboxInput("use_demo","Use demo data",value = FALSE),
-      actionButton("refresh_sheet","Get Latest Expert Responses",
-                   class = "btn-success"),
-      br(), br(),
+      
+      radioButtons(
+        "data_source",
+        "Data source",
+        choices = c(
+          "Demo data" = "demo",
+          "Upload CSV" = "csv",
+          "Google Sheets" = "google"
+        ),
+        selected = "demo"
+      ),
+      
+      conditionalPanel(
+        condition = "input.data_source == 'csv'",
+        
+        fileInput(
+          "csv_file",
+          "Upload Expert Responses",
+          accept = c(".csv", "text/csv")
+        ),
+        
+        downloadButton(
+          "download_template",
+          "Download Response Template",
+          class = "btn-default btn-sm"
+        )
+      ),
+      
+      conditionalPanel(
+        condition = "input.data_source == 'google'",
+        
+        actionButton(
+          "refresh_sheet",
+          "Get Latest Expert Responses",
+          class = "btn-success"
+        )
+      ),
+      
+      br(),
+      br(),
       
       # ============================================================
       # QUESTIONS
@@ -83,6 +119,7 @@ ui <- fluidPage(
           helpText(
             "Lowest plausible, best guess, and highest plausible estimates provided by each expert."),
           plotOutput("plot_participants",height = "600px")),
+        
         tabPanel("Pooled Distributions",
           br(),
           h3("Pooled Expert Distributions"),
@@ -92,11 +129,13 @@ ui <- fluidPage(
               "Use the sidebar options to display individual expert distributions,",
               "Degree-of-Belief weighting, and Beta approximations.")),
           plotOutput("plot_density",height = "600px")),
+        
         tabPanel("Mixture Histograms",
           br(),
           h3("Simulated Pooled Estimates"),
           helpText("Simulation draws from the pooled expert distributions."),
           plotOutput("plot_hist",height = "600px")),
+        
         tabPanel("CDF",
           br(),
           h3("Cumulative Probability"),

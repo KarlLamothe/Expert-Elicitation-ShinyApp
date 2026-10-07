@@ -20,6 +20,35 @@ server <- function(input, output, session) {
     })
   })
   
+  output$download_template <- downloadHandler(
+    
+    filename = function() {
+      "expert_elicitation_response_template.csv"
+    },
+    
+    content = function(file) {
+      
+      template <- data.frame(
+        Question = c(1, 1, 1, 1),
+        Round = c(1, 1, 2, 2),
+        Participant = c("P1", "P2", "P1", "P2"),
+        Lowest_Plausible_Pr = c(0.20, 0.30, 0.25, 0.35),
+        Best_Guess_Pr = c(0.40, 0.50, 0.50, 0.55),
+        Highest_Plausible_Pr = c(0.60, 0.75, 0.70, 0.75),
+        Degree_of_Belief = c(70, 65, 85, 75)
+      )
+      
+      write.csv(
+        template,
+        file,
+        row.names = FALSE,
+        na = ""
+      )
+    },
+    
+    contentType = "text/csv"
+  )
+  
   output$refresh_status <- renderUI({
     
     if (is.null(last_refresh())) {
@@ -69,14 +98,39 @@ server <- function(input, output, session) {
     }
   })
   
-  # Load either demo data or latest Google Sheet data
+  # Load data from the selected source
   raw_df <- reactive({
-    if (isTRUE(input$use_demo)) {
-      demo_df
-    } else {
-      req(sheet_data())
-      sheet_data()
+    
+    req(input$data_source)
+    
+    # Demo data
+    if (identical(input$data_source, "demo")) {
+      return(demo_df)
     }
+    
+    # Uploaded CSV
+    if (identical(input$data_source, "csv")) {
+      
+      req(input$csv_file)
+      
+      df <- read.csv(
+        input$csv_file$datapath,
+        stringsAsFactors = FALSE,
+        check.names = FALSE
+      )
+      
+      return(df)
+    }
+    
+    # Google Sheets
+    if (identical(input$data_source, "google")) {
+      
+      req(sheet_data())
+      
+      return(sheet_data())
+    }
+    
+    NULL
   })
   
   # Column mapping UI
@@ -194,17 +248,10 @@ server <- function(input, output, session) {
     }
     q_col <- if (has_q) input$col_question else "__Question__"
     
-    # If one or more questions chosen (not "All"), filter to those
-    if (has_q && !is.null(input$question_multi)) {
-      sel <- setdiff(input$question_multi, "All")
-      if (length(sel) > 0) {
-        df <- df %>% filter(.data[[q_col]] %in% sel)
-      }
-    }
+    # -------------------------------------------------------------------------
+    # Validate input data before analysis
+    # -------------------------------------------------------------------------
     
-    qs <- unique(df[[q_col]])
-    
-    # Summarize per selected question
     dob_col_val <- if (
       !is.null(input$col_dob) &&
       !identical(input$col_dob, "<none>")
@@ -222,6 +269,60 @@ server <- function(input, output, session) {
     } else {
       NULL
     }
+    
+    validation <- validate_elicitation_data(
+      df = df,
+      id_col = input$col_id,
+      question_col = q_col,
+      lpp_col = input$col_lpp,
+      bgp_col = input$col_bgp,
+      hpp_col = input$col_hpp,
+      dob_col = dob_col_val,
+      round_col = round_col_val
+    )
+    
+    if (!validation$valid) {
+      
+      showModal(
+        modalDialog(
+          title = "Input Data Validation Failed",
+          
+          tags$p(
+            "The analysis was not run because problems were detected in the input data."
+          ),
+          
+          tags$p(
+            "Please correct the following issue(s) and run the analysis again:"
+          ),
+          
+          tags$ul(
+            lapply(
+              validation$problems,
+              function(problem) {
+                tags$li(problem)
+              }
+            )
+          ),
+          
+          footer = modalButton("Close"),
+          easyClose = TRUE,
+          size = "l"
+        )
+      )
+      
+      return(NULL)
+    }
+    
+    
+    # If one or more questions chosen (not "All"), filter to those
+    if (has_q && !is.null(input$question_multi)) {
+      sel <- setdiff(input$question_multi, "All")
+      if (length(sel) > 0) {
+        df <- df %>% filter(.data[[q_col]] %in% sel)
+      }
+    }
+    
+    qs <- unique(df[[q_col]])
     
     # -------------------------------------------------------------------------
     # Single-round analysis
