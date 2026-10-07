@@ -862,6 +862,16 @@ server <- function(input, output, session) {
         bgp_col = input$col_bgp,
         hpp_col = input$col_hpp,
         question_col = input$col_question,
+        
+        round_col = if (
+          !is.null(input$col_round) &&
+          !identical(input$col_round, "<none>")
+        ) {
+          input$col_round
+        } else {
+          NULL
+        },
+        
         selected_questions = input$question_multi,
         use_export_theme = TRUE,
         theme_export = theme_export,
@@ -1044,10 +1054,20 @@ server <- function(input, output, session) {
         bgp_col = input$col_bgp,
         hpp_col = input$col_hpp,
         question_col = input$col_question,
+        
+        round_col = if (
+          !is.null(input$col_round) &&
+          !identical(input$col_round, "<none>")
+        ) {
+          input$col_round
+        } else {
+          NULL
+        },
+        
         selected_questions = input$question_multi,
         use_export_theme = TRUE,
         theme_export = theme_export,
-        facet_cols = facet_cols
+        facet_cols = dims$facet_cols
       )
       
       g1 <- g1 +

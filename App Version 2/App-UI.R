@@ -130,10 +130,10 @@ ui <- fluidPage(
               "Degree-of-Belief weighting, and Beta approximations.")),
           plotOutput("plot_density",height = "600px")),
         
-        tabPanel("Mixture Histograms",
+        tabPanel("Simulated Pooled Estimates",
           br(),
           h3("Simulated Pooled Estimates"),
-          helpText("Simulation draws from the pooled expert distributions."),
+          helpText("Monte Carlo draws from the pooled expert distributions."),
           plotOutput("plot_hist",height = "600px")),
         
         tabPanel("CDF",
@@ -148,8 +148,8 @@ ui <- fluidPage(
           h3("Elicitation Summary"),
           helpText(
             paste(
-              "The pooled estimate gives equal weight to each expert.",
-              "Degree-of-Belief weighting is shown separately for comparison.")),
+              "Equal-weight and Degree-of-Belief-weighted pooled estimates are shown separately.",
+              "For multi-round elicitations, changes represent Round 2 minus Round 1.")),
           br(),
           uiOutput("summary_dashboard"),
           tags$hr(),
@@ -162,11 +162,22 @@ ui <- fluidPage(
           tableOutput("round_comparison_table"),
           
           tags$hr(),
-          h4("Detailed Results"),
-          
-          div(
-            style = "font-size: 15px;",
-            tableOutput("summary_table")),
+          tags$details(
+            tags$summary(
+              style = "
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 20px;
+    ",
+              "Detailed Results"
+            ),
+            br(),
+            
+            div(
+              style = "font-size: 15px;",
+              tableOutput("summary_table")
+            )
+          ),
           
           tags$hr(),
           
