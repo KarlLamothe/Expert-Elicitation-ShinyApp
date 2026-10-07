@@ -46,7 +46,7 @@ validate_elicitation_data <- function(df,
     stringsAsFactors = FALSE
   )
   
-  # Optional Degree of Belief
+  # Optional Assessment Confidence
   if (!is.null(dob_col) &&
       !identical(dob_col, "<none>") &&
       dob_col %in% names(df)) {
@@ -321,7 +321,7 @@ validate_elicitation_data <- function(df,
     }
     
     # -----------------------------------------------------------------------
-    # Degree of Belief
+    # Assessment confidence
     # -----------------------------------------------------------------------
     
     if (!is.null(dob_col) &&
@@ -341,7 +341,7 @@ validate_elicitation_data <- function(df,
             problems,
             paste0(
               label,
-              ": Degree of Belief must be numeric or left blank."
+              ": Assessment confidence must be numeric or left blank."
             )
           )
           
@@ -351,7 +351,7 @@ validate_elicitation_data <- function(df,
             problems,
             paste0(
               label,
-              ": Degree of Belief must be between 0 and 100."
+              ": Assessment confidence must be between 0 and 100."
             )
           )
         }

@@ -75,7 +75,7 @@ ui <- fluidPage(
         
         checkboxInput(
           "show_dob_mix",
-          "Show Degree-of-Belief weighted mixture",
+          "Show assessment confidence-weighted mixture",
           TRUE
         ),
         
@@ -176,7 +176,7 @@ ui <- fluidPage(
             paste(
               "PERT distributions derived from expert LPP, BGP, and HPP estimates.",
               "Use the sidebar options to display individual expert distributions,",
-              "Degree-of-Belief weighting, and Beta approximations.")),
+              "Assessment confidence weighting, and Beta approximations.")),
           plotOutput("plot_density",height = "600px")),
         
         tabPanel("Simulated Pooled Estimates",
@@ -197,7 +197,7 @@ ui <- fluidPage(
           h3("Elicitation Summary"),
           helpText(
             paste(
-              "Equal-weight and Degree-of-Belief-weighted pooled estimates are shown separately.",
+              "Equal-weight and assessment confidence-weighted pooled estimates are shown separately.",
               "For multi-round elicitations, changes represent Round 2 minus Round 1.")),
           br(),
           uiOutput("summary_dashboard"),
@@ -205,7 +205,7 @@ ui <- fluidPage(
           h4("Round Comparison"),
           
           helpText(
-            "Changes in pooled estimates and confidence between Round 1 and Round 2."
+            "Changes in pooled estimates and assessment confidence between Round 1 and Round 2."
           ),
           
           tableOutput("round_comparison_table"),
@@ -239,28 +239,42 @@ ui <- fluidPage(
             ),
             
             tags$li(
-              tags$b("DoB-weighted mean: "),
-              "Pooled estimate after weighting experts according to their reported Degree of Belief."
+              tags$b("Assessment confidence: "),
+              paste(
+                "A participant's self-reported confidence in the probability assessment",
+                "provided for a question, considering the available evidence, relevant",
+                "expertise, assumptions, and remaining uncertainty. Assessment confidence",
+                "is separate from the uncertainty represented by the lowest and highest",
+                "plausible probabilities."
+              )
             ),
             
             tags$li(
-              tags$b("Average Degree of Belief: "),
-              "Mean Degree of Belief reported by experts."
+              tags$b("Confidence-weighted mean: "),
+              paste(
+                "The pooled estimate obtained when participants' relative contributions",
+                "are weighted according to their reported assessment confidence."
+              )
+            ),
+            
+            tags$li(
+              tags$b("Average assessment confidence: "),
+              "Mean assessment confidence reported by participating experts."
             ),
             
             tags$li(
               tags$b("Δ Equal-weight mean: "),
-              "Round 2 minus Round 1 equal-weight pooled estimate."
+              "Round 2 minus Round 1 equal-weight pooled mean."
             ),
             
             tags$li(
-              tags$b("Δ DoB-weighted mean: "),
-              "Round 2 minus Round 1 DoB-weighted pooled estimate."
+              tags$b("Δ Confidence-weighted mean: "),
+              "Round 2 minus Round 1 assessment confidence-weighted pooled mean."
             ),
             
             tags$li(
-              tags$b("Δ Degree of Belief: "),
-              "Round 2 minus Round 1 average Degree of Belief."
+              tags$b("Δ Assessment confidence: "),
+              "Round 2 minus Round 1 average assessment confidence."
             )
           )
           )

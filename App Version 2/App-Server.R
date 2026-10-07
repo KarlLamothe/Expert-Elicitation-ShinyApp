@@ -35,7 +35,7 @@ server <- function(input, output, session) {
         Lowest_Plausible_Pr = c(0.20, 0.30, 0.25, 0.35),
         Best_Guess_Pr = c(0.40, 0.50, 0.50, 0.55),
         Highest_Plausible_Pr = c(0.60, 0.75, 0.70, 0.75),
-        Degree_of_Belief = c(70, 65, 85, 75)
+        Assessment_Confidence = c(70, 65, 85, 75)
       )
       
       write.csv(
@@ -194,11 +194,11 @@ server <- function(input, output, session) {
       
       selectInput(
         "col_dob",
-        "Degree of Belief (DoB; optional)",
+        "Assessment confidence (AC; optional)",
         choices = c("<none>", cols),
         selected = {
           hit <- grep(
-            "Belief|DoB",
+            "Assessment.*Confidence|Confidence|Belief|DoB",
             cols,
             ignore.case = TRUE,
             value = TRUE
@@ -408,10 +408,10 @@ server <- function(input, output, session) {
         
         showNotification(
           paste0(
-            "DoB-weighted results are unavailable for question",
+            "AC-weighted results are unavailable for question",
             if (length(affected_questions) > 1) "s " else " ",
             paste(affected_questions, collapse = ", "),
-            " because all participants reported a Degree of Belief of 0. ",
+            " because all participants reported an assessment confidence of 0. ",
             "Equal-weight results remain available."
           ),
           type = "warning",
@@ -443,7 +443,7 @@ server <- function(input, output, session) {
           paste0(
             "DoB-weighted results are unavailable for ",
             paste(affected, collapse = ", "),
-            " because all participants reported a Degree of Belief of 0. ",
+            " because all participants reported an assessment confidence of 0. ",
             "Equal-weight results remain available."
           ),
           type = "warning",
@@ -1429,12 +1429,12 @@ server <- function(input, output, session) {
           ),
           div(
             style = label_style,
-            "Δ DoB-weighted mean"
+            "Δ AC-weighted mean"
           )
         )
       ),
       
-      # Mean Degree of Belief
+      # Mean Assessment confidence
       column(
         4,
         div(
@@ -1448,7 +1448,7 @@ server <- function(input, output, session) {
           ),
           div(
             style = label_style,
-            "Δ Degree of Belief"
+            "Δ Assessment confidence"
           )
         )
       ),
@@ -1488,7 +1488,7 @@ server <- function(input, output, session) {
           ),
           div(
             style = label_style,
-            "DoB-weighted mean (R1 \u2192 R2)"
+            "AC-weighted mean (R1 \u2192 R2)"
           )
         )
       ),
@@ -1539,21 +1539,21 @@ server <- function(input, output, session) {
         `Δ Equal-weight mean` =
           EqW_Mean_R2 - EqW_Mean_R1,
         
-        `Δ DoB-weighted mean` =
+        `Δ AC-weighted mean` =
           DoB_Mean_R2 - DoB_Mean_R1,
         
-        `Δ Degree of Belief` =
+        `Δ Assessment confidence` =
           Mean_DoB_R2 - Mean_DoB_R1
       ) %>%
       rename(
         `Equal-weight mean (R1)` = EqW_Mean_R1,
         `Equal-weight mean (R2)` = EqW_Mean_R2,
         
-        `DoB-weighted mean (R1)` = DoB_Mean_R1,
-        `DoB-weighted mean (R2)` = DoB_Mean_R2,
+        `AC-weighted mean (R1)` = DoB_Mean_R1,
+        `AC-weighted mean (R2)` = DoB_Mean_R2,
         
-        `Average Degree of Belief (R1)` = Mean_DoB_R1,
-        `Average Degree of Belief (R2)` = Mean_DoB_R2
+        `Average Assessment confidence (R1)` = Mean_DoB_R1,
+        `Average Assessment confidence (R2)` = Mean_DoB_R2
       ) %>%
     mutate(
       across(where(is.numeric), ~ round(.x, 2))

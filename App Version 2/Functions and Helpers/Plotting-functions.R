@@ -17,7 +17,7 @@ build_density_plot <- function(r,
     labs(x = "Probability", y = "Density") +
     scale_color_manual(name = NULL,
                        values = c("Equal-weight mixture" = "black",
-                                  "DoB-weighted mixture" = "#D55E00",
+                                  "AC-weighted mixture" = "#D55E00",
                                   "Beta approximation" = "#0072B2")) +
     guides(color = guide_legend(order = 1, nrow = 1)) +
     theme(axis.text.y = element_blank(),
@@ -33,7 +33,7 @@ build_density_plot <- function(r,
   # DoB-weighted mixture
   if (isTRUE(show_dob_mix)) {
     p <- p + geom_line(
-      data = r$dens_mix_w_all,aes(x = p, y = density, color = "DoB-weighted mixture"),
+      data = r$dens_mix_w_all,aes(x = p, y = density, color = "AC-weighted mixture"),
       linewidth = 0.8)}
   
   # Beta approximation
@@ -105,11 +105,11 @@ build_hist_plot <- function(r,
     labs(x = "Probability", y = "Density") +
     scale_color_manual(name = NULL,
                        values = c("Equal-weight mixture" = "black",
-                                  "DoB-weighted mixture" = "#D55E00",
+                                  "AC-weighted mixture" = "#D55E00",
                                   "Beta approximation" = "#0072B2")) +
     scale_linetype_manual(name = NULL, 
                           values = c("Equal-weight mixture" = "solid",
-                                     "DoB-weighted mixture" = "solid",
+                                     "AC-weighted mixture" = "solid",
                                      "Beta approximation" = "dashed")) +
     theme(axis.text.y = element_blank(), 
           axis.ticks.y = element_blank())
@@ -117,8 +117,8 @@ build_hist_plot <- function(r,
   if (isTRUE(show_dob_mix)) {
     p <- p +geom_line(data = r$dens_mix_w_all, 
                       aes(x = p, y = density,
-                          color = "DoB-weighted mixture",
-                          linetype = "DoB-weighted mixture"),lwd = 0.5)}
+                          color = "AC-weighted mixture",
+                          linetype = "AC-weighted mixture"),lwd = 0.5)}
   
   if (isTRUE(show_beta)) {
     p <- p +geom_line(data = r$beta_all, aes(x = p, y = density,
@@ -151,19 +151,19 @@ build_cdf_plot <- function(r,
                                         linetype = "Equal-weight mixture"), lwd = 0.5) +
     scale_color_manual(name = NULL,
                        values = c("Equal-weight mixture" = "black",
-                                  "DoB-weighted mixture" = "#D55E00",
+                                  "AC-weighted mixture" = "#D55E00",
                                   "Beta approximation" = "#0072B2")) +
     scale_linetype_manual(name = NULL, 
                           values = c("Equal-weight mixture" = "solid",
-                                     "DoB-weighted mixture" = "solid",
+                                     "AC-weighted mixture" = "solid",
                                      "Beta approximation" = "dashed")) +
     labs(x = "Probability",y = "Cumulative probability")
   
   if (isTRUE(show_dob_mix)) {
     p <- p + geom_line(data = r$cdf_mix_w_all, 
                        aes(p, cdf,
-                           color = "DoB-weighted mixture",
-                           linetype = "DoB-weighted mixture"),lwd = 0.5)
+                           color = "AC-weighted mixture",
+                           linetype = "AC-weighted mixture"),lwd = 0.5)
   }
   
   if (isTRUE(show_beta)) {

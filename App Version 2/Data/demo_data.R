@@ -19,7 +19,7 @@ demo_df <- cbind.data.frame(
                            0.22,0.26,0.26,0.22,0.49,0.47,0.62,0.55,0.51,0.67,
                            0.71,0.67,0.73,0.70,0.71,0.75,0.49,0.47,0.46,0.49,
                            0.47,0.54,0.22,0.38,0.33,0.26,0.27,0.30),
-  Degree_of_Belief = c(100, 0, 50, 30, 85, 79, 99, 84, 33, 24, 
+  Assessment_Confidence = c(100, 0, 50, 30, 85, 79, 99, 84, 33, 24, 
                        77, 100, 100, 74, 24, 28, 34, 65, 88, 19,
                        100, 100, 100, 0, 45, 50, 66, 99, 34,
                        33, 22, 56, 98, 93, 100, 100, 100, 34, 25,
@@ -66,14 +66,14 @@ demo_round2$Highest_Plausible_Pr <- pmax(
   pmin(demo_round2$Highest_Plausible_Pr + hpp_change, 0.99),
   demo_round2$Best_Guess_Pr)
 
-# Allow Degree of Belief to change following discussion
+# Allow assessment confidence to change following discussion
 dob_change <- sample(
   c(-15, -10, -5, 0, 0, 5, 10, 15),
   nrow(demo_round2),
   replace = TRUE)
 
-demo_round2$Degree_of_Belief <- pmin(
-  pmax(demo_round2$Degree_of_Belief + dob_change, 0),
+demo_round2$Assessment_Confidence <- pmin(
+  pmax(demo_round2$Assessment_Confidence + dob_change, 0),
   100)
 
 # Combine both rounds
@@ -87,6 +87,6 @@ demo_df <- demo_df[, c(
   "Lowest_Plausible_Pr",
   "Best_Guess_Pr",
   "Highest_Plausible_Pr",
-  "Degree_of_Belief"
+  "Assessment_Confidence"
 )]
 
