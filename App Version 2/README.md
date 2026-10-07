@@ -34,7 +34,7 @@ Experts independently provide their initial:
 - lowest plausible estimate;
 - best-guess estimate;
 - highest plausible estimate; and
-- Assessment Confidence.
+- assessment confidence.
 
 Individual and pooled results can then be summarized and visualized to support structured discussion.
 
@@ -51,7 +51,7 @@ Following discussion, experts independently provide a second set of:
 - lowest plausible estimates;
 - best-guess estimates;
 - highest plausible estimates; and
-- Assessment Confidence values.
+- assessment confidence values.
 
 The application analyzes Round 1 and Round 2 separately and provides direct comparisons between rounds.
 
@@ -73,7 +73,7 @@ The application also calculates changes between Round 1 and Round 2, including:
 
 - change in the equal-weight pooled mean;
 - change in the assessment confidence-weighted pooled mean; and
-- change in average Assessment Confidence.
+- change in average assessment confidence.
 
 Changes are calculated as:
 
@@ -117,7 +117,7 @@ where the default value of the PERT shape parameter is:
 
 The resulting Beta distribution is scaled to the expert's interval from `a` to `b`.
 
-Assessment Confidence does **not** alter an expert's individual PERT distribution. An expert providing the same lowest plausible, best-guess, and highest plausible estimates will therefore have the same individual PERT distribution regardless of the reported Assessment Confidence.
+Assessment confidence does **not** alter an expert's individual PERT distribution. An expert providing the same lowest plausible, best-guess, and highest plausible estimates will therefore have the same individual PERT distribution regardless of the reported assessment confidence.
 
 ## Equal-Weight Aggregation
 
@@ -162,7 +162,7 @@ f_{\mathrm{AC}}(x)
 \sum_{i=1}^{n} w_i f_i(x)
 ```
 
-Experts reporting higher Assessment Confidence therefore contribute more strongly to the pooled distribution than experts reporting lower Assessment Confidence.
+Experts reporting higher assessment confidence therefore contribute more strongly to the pooled distribution than experts reporting lower assessment confidence.
 
 The weighting is relative within each question and round. For example, if three experts report Assessment Confidence values of 100, 50, and 50, their normalized contributions to the pooled distribution are:
 
@@ -172,7 +172,7 @@ The weighting is relative within each question and round. For example, if three 
 
 ### Equal Assessment Confidence
 
-If all experts report the same Assessment Confidence, the normalized weights are equal. The assessment confidence-weighted pool is therefore equivalent to the equal-weight pool regardless of whether the common Assessment Confidence is high or low.
+If all experts report the same assessment confidence, the normalized weights are equal. The assessment confidence-weighted pool is therefore equivalent to the equal-weight pool regardless of whether the common assessment confidence is high or low.
 
 For example:
 
@@ -192,34 +192,34 @@ both produce normalized weights of:
 0.25, 0.25, 0.25, 0.25
 ```
 
-The current implementation therefore uses Assessment Confidence to represent **relative confidence among experts**. The absolute magnitude of Assessment Confidence does not independently increase or decrease the uncertainty of the pooled probability distribution.
+The current implementation therefore uses assessment confidence to represent **relative confidence among experts**. The absolute magnitude of assessment confidence does not independently increase or decrease the uncertainty of the pooled probability distribution.
 
 ### Zero Assessment Confidence
 
-An individual expert can report an Assessment Confidence of zero. In this situation, the expert continues to contribute normally to the equal-weight pool but receives zero weight in the Assessment confidence-weighted pool.
+An individual expert can report an assessment confidence of zero. In this situation, the expert continues to contribute normally to the equal-weight pool but receives zero weight in the Assessment confidence-weighted pool.
 
 If **all participants report an Assessment Confidence of zero for a question within a round**, a Assessment confidence-weighted distribution cannot be calculated because no relative weights can be assigned.
 
 In this situation:
 
 - the equal-weight results remain available;
-- Assessment confidence-weighted summaries are reported as unavailable; and
+- assessment confidence-weighted summaries are reported as unavailable; and
 - the application displays a warning identifying the affected question and elicitation round.
 
 ## Missing Assessment Confidence
 
-Assessment Confidence values are constrained to the range from 0 to 100.
+Assessment confidence values are constrained to the range from 0 to 100.
 
-If an Assessment Confidence value is missing, or if no Assessment Confidence column is supplied, a value of **100** is assigned.
+If an assessment confidence value is missing, or if no Assessment Confidence column is supplied, a value of **100** is assigned.
 
-This implementation treats the absence of an Assessment Confidence value as full acceptance of the expert's stated elicitation choices rather than interpreting a missing value as additional uncertainty.
+This implementation treats the absence of an assessment confidence value as full acceptance of the expert's stated elicitation choices rather than interpreting a missing value as additional uncertainty.
 
 ## Comparing Equal-Weight and AC-Weighted Results
 
 For each question and elicitation round, the application calculates both:
 
 - an equal-weight pooled distribution; and
-- an Assessment confidence-weighted pooled distribution.
+- an assessment confidence-weighted pooled distribution.
 
 For each distribution, the application calculates:
 
@@ -240,18 +240,18 @@ The influence of assessment confidence weighting on the pooled mean is calculate
 
 A positive value indicates that assessment confidence weighting shifts the pooled mean upward relative to equal weighting, while a negative value indicates a downward shift.
 
-A value near zero indicates that assessment confidence weighting has little influence on the pooled mean. This can occur when experts report similar Assessment Confidence values or when differences in Assessment Confidence are not systematically associated with differences in the elicited estimates.
+A value near zero indicates that assessment confidence weighting has little influence on the pooled mean. This can occur when experts report similar assessment confidence values or when differences in assessment confidence are not systematically associated with differences in the elicited estimates.
 
 ## Assessment Confidence Summaries
 
 For each question and round, Version 2 reports:
 
-- mean Assessment Confidence;
-- median Assessment Confidence;
-- minimum Assessment Confidence; and
-- maximum Assessment Confidence.
+- mean assessment confidence;
+- median assessment confidence;
+- minimum assessment confidence; and
+- maximum assessment confidence.
 
-For multi-round elicitation, the application additionally reports the change in average Assessment Confidence between rounds.
+For multi-round elicitation, the application additionally reports the change in average assessment confidence between rounds.
 
 ## Distribution Summaries
 
@@ -281,8 +281,8 @@ Version 2 supports:
 - calculating assessment confidence-weighted linear opinion pools;
 - comparing equal-weight and assessment confidence-weighted results;
 - comparing Round 1 and Round 2 elicitation results;
-- summarizing Assessment Confidence across participants;
-- calculating changes in average Assessment Confidence between rounds;
+- summarizing assessment confidence across participants;
+- calculating changes in average assessment confidence between rounds;
 - displaying individual expert estimates by question and round;
 - displaying pooled probability distributions by question and round;
 - displaying simulated mixture distributions by question and round;
@@ -381,13 +381,13 @@ The lowest and highest plausible probabilities must also define an interval with
 \mathrm{LPP} < \mathrm{HPP}
 ```
 
-If Assessment Confidence is provided, valid values range from 0 to 100:
+If assessment confidence is provided, valid values range from 0 to 100:
 
 ```math
 0 \leq \mathrm{AC} \leq 100
 ```
 
-A missing Assessment Confidence is permitted and is currently interpreted by the application as an Assessment Confidence of 100.
+A missing assessment confidence is permitted and is currently interpreted by the application as an assessment confidence of 100.
 
 The application checks for:
 
@@ -397,7 +397,7 @@ The application checks for:
 - highest plausible probabilities that are greater than or equal to 1;
 - best-guess probabilities that fall outside the corresponding lowest and highest plausible estimates;
 - plausible intervals with zero or negative width;
-- Assessment confidence values outside the permitted range of 0 to 100;
+- assessment confidence values outside the permitted range of 0 to 100;
 - missing Question or Participant fields within submitted responses;
 - missing Round values when a Round column is being used; and
 - duplicate responses from the same participant for the same Question and Round.
