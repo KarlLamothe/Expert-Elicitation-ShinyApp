@@ -726,15 +726,24 @@ server <- function(input, output, session) {
         unique(as.character(summary_all$Round))
       )
       
+      n_facet_cols <- choose_round_facet_cols(
+        length(questions_order)
+      )
+      
       question_round_levels <- unlist(
         lapply(
-          seq(1, length(questions_order), by = 4),
+          seq(
+            1,
+            length(questions_order),
+            by = n_facet_cols
+          ),
           function(i) {
-            
             qs_block <- questions_order[
-              i:min(i + 3, length(questions_order))
+              i:min(
+                i + n_facet_cols - 1,
+                length(questions_order)
+              )
             ]
-            
             unlist(
               lapply(
                 rounds_order,
@@ -895,16 +904,29 @@ server <- function(input, output, session) {
   # Single PNG downloads (use current selections in results()) 
   ###########################################################################
   # Determine export dimensions from the number of displayed questions
-  export_dimensions <- function(r, facet_cols = 4) {
-    n_questions <- nrow(r$summaries)
-    # Never use more facet columns than there are questions
-    n_cols <- min(facet_cols, n_questions)
-    n_rows <- ceiling(n_questions / n_cols)
-    list(
-      facet_cols = n_cols,
-      width = max(8, 2.6 * n_cols),
-      height = max(4.5, 3.0 * n_rows)
-    )
+  export_dimensions <- function(r) {
+    # Count unique questions, not Question x Round rows
+    n_questions <- length(unique(r$summaries$Question))
+    # Determine whether this is a multi-round analysis
+    has_round <- "Round" %in% names(r$summaries) &&
+      length(unique(r$summaries$Round)) > 1
+    if (has_round) {
+      # Multi-round plots:
+      # one column per question, with rounds stacked vertically
+      n_cols <- n_questions
+      n_rounds <- length(unique(r$summaries$Round))
+      n_rows <- n_rounds
+      list(facet_cols = n_cols,
+           width = max(8, 2.8 * n_cols),
+           height = max(5.5, 3.0 * n_rows))
+    } else {
+      # Single-round plots:
+      # retain the original maximum of four columns
+      n_cols <- min(4, n_questions)
+      n_rows <- ceiling(n_questions / n_cols)
+      list(facet_cols = n_cols,
+           width = max(8, 2.8 * n_cols),
+           height = max(4.5, 3.0 * n_rows))}
   }
   
   output$download_participants_png <- downloadHandler(

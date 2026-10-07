@@ -400,3 +400,7 @@ validate_elicitation_data <- function(df,
     problems = unique(problems)
   )
 }
+
+choose_round_facet_cols <- function(n_questions) {
+  n_questions
+}

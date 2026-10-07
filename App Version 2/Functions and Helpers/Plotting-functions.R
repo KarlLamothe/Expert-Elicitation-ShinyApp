@@ -28,56 +28,38 @@ build_density_plot <- function(r,
   # Anonymous individual expert distributions
   if (isTRUE(show_individual)) {
     p <- p + geom_line(data = r$dens_ind_all, aes(x = p,y = density,group = id),
-                       alpha = 0.5,linewidth = 0.4,color = "grey55")
-    }
+                       alpha = 0.5,linewidth = 0.4,color = "grey55")}
   
   # DoB-weighted mixture
   if (isTRUE(show_dob_mix)) {
     p <- p + geom_line(
       data = r$dens_mix_w_all,aes(x = p, y = density, color = "DoB-weighted mixture"),
-      linewidth = 0.8)
-    }
+      linewidth = 0.8)}
   
   # Beta approximation
   if (isTRUE(show_beta)) {
     p <- p + geom_line(
       data = r$beta_all,
       aes( x = p,y = density, color = "Beta approximation"),
-      linewidth = 0.8, linetype="dashed")
-    
-    }
+      linewidth = 0.8, linetype="dashed")}
   
   # Faceting
   if ("Question_Round" %in% names(r$dens_mix_all)) {
     
-    p <- p +
-      facet_wrap(
-        ~ Question_Round,
-        scales = "free_y"
-      )
+    # Multi-round data
+    n_questions <- length(unique(r$dens_mix_all$Question))
+    n_facet_cols <- choose_round_facet_cols(n_questions)
+    p <- p + facet_wrap(~ Question_Round, ncol = n_facet_cols, scales = "free_y")
     
   } else {
     
-    if (is.null(facet_cols)) {
-      
-      p <- p +
-        facet_wrap(
-          ~ Question,
-          scales = "free_y"
-        )
-      
-    } else {
-      
-      p <- p +
-        facet_wrap(
-          ~ Question,
-          ncol = facet_cols,
-          scales = "fixed"
-        )
-    }
+    # Single-round data
+    n_questions <- length(unique(r$dens_mix_all$Question))
+    n_facet_cols <- min(4, n_questions)
+    p <- p + facet_wrap(~ Question, ncol = n_facet_cols, scales = "free_y")
   }
-p
-}
+  p
+  }
 
 build_hist_plot <- function(r,
                             show_beta = TRUE,
@@ -89,9 +71,9 @@ build_hist_plot <- function(r,
   
   if ("Round" %in% names(samples_plot)) {
     
-    # Use 4 columns when facet_cols has not been explicitly supplied
-    n_facet_cols <- if (is.null(facet_cols)) 4 else facet_cols
-    
+    # Use no more facet columns than there are questions
+    n_questions <- length(unique(samples_plot$Question))    
+    n_facet_cols <- choose_round_facet_cols(n_questions)
     questions_order <- unique(as.character(samples_plot$Question))
     rounds_order <- sort(unique(as.character(samples_plot$Round)))
     
@@ -101,38 +83,18 @@ build_hist_plot <- function(r,
         function(i) {
           
           qs_block <- questions_order[
-            i:min(
-              i + n_facet_cols - 1,
-              length(questions_order)
-            )
-          ]
+            i:min(i + n_facet_cols - 1, length(questions_order))]
           
-          unlist(
-            lapply(
-              rounds_order,
-              function(rnd) {
-                paste0(
+          unlist(lapply(rounds_order,function(rnd) {paste0(
                   "Question ", qs_block,
-                  "\nRound ", rnd
-                )
-              }
-            )
-          )
-        }
+                  "\nRound ", rnd)}))}
       )
     )
     
     samples_plot <- samples_plot %>%
-      mutate(
-        Question_Round = factor(
-          paste0(
-            "Question ", Question,
-            "\nRound ", Round
-          ),
-          levels = question_round_levels
-        )
-      )
-  }
+      mutate(Question_Round = factor(
+        paste0("Question ", Question, "\nRound ", Round),
+          levels = question_round_levels))}
   
   p <- ggplot() +
     geom_histogram(data = samples_plot, aes(x = samples, y = after_stat(density)),
@@ -156,55 +118,22 @@ build_hist_plot <- function(r,
     p <- p +geom_line(data = r$dens_mix_w_all, 
                       aes(x = p, y = density,
                           color = "DoB-weighted mixture",
-                          linetype = "DoB-weighted mixture"),lwd = 0.5)
-  }
+                          linetype = "DoB-weighted mixture"),lwd = 0.5)}
   
   if (isTRUE(show_beta)) {
     p <- p +geom_line(data = r$beta_all, aes(x = p, y = density,
                                              color = "Beta approximation",
                                              linetype = "Beta approximation"),
-                      lwd = 0.5)
-  }
+                      lwd = 0.5)}
   
   # Faceting
   if ("Question_Round" %in% names(samples_plot)) {
-    
-    if (is.null(facet_cols)) {
-      
-      p <- p +
-        facet_wrap(
-          ~ Question_Round,
-          scales = "free_y"
-        )
-      
-    } else {
-      
-      p <- p +
-        facet_wrap(
-          ~ Question_Round,
-          ncol = facet_cols,
-          scales = "free_y"
-        )
-    }
-    
+    p <- p +facet_wrap(~ Question_Round, ncol = n_facet_cols,scales = "free_y")
   } else {
-    
-    if (is.null(facet_cols)) {
-      
-      p <- p +
-        facet_wrap(
-          ~ Question,
-          scales = "free_y"
-        )
-      
-    } else {
-      
-      p <- p +
-        facet_wrap(
-          ~ Question,
-          ncol = facet_cols
-        )
-    }
+    # Single-round data
+    n_questions <- length(unique(samples_plot$Question))
+    n_facet_cols <- choose_round_facet_cols(n_questions)
+    p <- p + facet_wrap(~ Question, ncol = n_facet_cols_single,scales = "free_y")
   }
   p
 }
@@ -253,43 +182,18 @@ build_cdf_plot <- function(r,
   # Faceting
   if ("Question_Round" %in% names(r$cdf_mix_all)) {
     
-    # Multi-round data
-    if (is.null(facet_cols)) {
-      
-      p <- p +
-        facet_wrap(
-          ~ Question_Round
-        )
-      
-    } else {
-      
-      p <- p +
-        facet_wrap(
-          ~ Question_Round,
-          ncol = facet_cols
-        )
-    }
+    # Adapt number of columns to number of selected questions
+    n_questions <- length(unique(r$cdf_mix_all$Question))
+    n_facet_cols <- choose_round_facet_cols(n_questions)
+    p <- p + facet_wrap(~ Question_Round, ncol = n_facet_cols)
     
   } else {
     
     # Single-round data
-    if (is.null(facet_cols)) {
-      
-      p <- p +
-        facet_wrap(
-          ~ Question
-        )
-      
-    } else {
-      
-      p <- p +
-        facet_wrap(
-          ~ Question,
-          ncol = facet_cols
-        )
+    n_questions <- length(unique(r$cdf_mix_all$Question))
+    n_facet_cols <- choose_round_facet_cols(n_questions)
+    p <- p + facet_wrap(~ Question, ncol = n_facet_cols)
     }
-  }
-  
   p
 }
 
@@ -339,9 +243,9 @@ build_individuals_plot <- function(df_raw,
         Highest_Plausible_Pr = suppressWarnings(as.numeric(.data[[hpp_col]]))
       )
     
-    # Number of columns used for arranging question blocks
-    n_facet_cols <- if (is.null(facet_cols)) 4 else facet_cols
-    
+    # Use no more facet columns than there are questions
+    n_questions <- length(unique(dfp$Question))
+    n_facet_cols <- choose_round_facet_cols(n_questions)
     questions_order <- unique(as.character(dfp$Question))
     rounds_order <- sort(unique(as.character(dfp$Round)))
     
@@ -349,50 +253,25 @@ build_individuals_plot <- function(df_raw,
       lapply(
         seq(1, length(questions_order), by = n_facet_cols),
         function(i) {
-          
           qs_block <- questions_order[
-            i:min(
-              i + n_facet_cols - 1,
-              length(questions_order)
-            )
-          ]
-          
-          unlist(
-            lapply(
-              rounds_order,
-              function(rnd) {
-                paste0(
-                  "Question ", qs_block,
-                  "\nRound ", rnd
-                )
-              }
-            )
-          )
-        }
+            i:min(i + n_facet_cols - 1, length(questions_order))]
+          unlist(lapply(rounds_order, function(rnd) {
+            paste0("Question ", qs_block, "\nRound ", rnd)}))}
       )
     )
     
     dfp <- dfp %>%
-      mutate(
-        Question_Round = factor(
-          paste0(
-            "Question ", Question,
-            "\nRound ", Round
-          ),
-          levels = question_round_levels
-        )
-      )
-    
+      mutate(Question_Round = factor(paste0("Question ", 
+                                            Question, "\nRound ", Round), 
+          levels = question_round_levels))
   } else {
-    
     dfp <- df %>%
       transmute(
         Question             = .data[[q_col]],
         Participant          = as.character(.data[[id_col]]),
         Lowest_Plausible_Pr  = suppressWarnings(as.numeric(.data[[lpp_col]])),
         Best_Guess_Pr        = suppressWarnings(as.numeric(.data[[bgp_col]])),
-        Highest_Plausible_Pr = suppressWarnings(as.numeric(.data[[hpp_col]]))
-      )
+        Highest_Plausible_Pr = suppressWarnings(as.numeric(.data[[hpp_col]])))
   }
   
   # Long form for 3 raw points (LPP, BGP, HPP)
@@ -407,11 +286,8 @@ build_individuals_plot <- function(df_raw,
   
   g <- ggplot() +
     # Plausible range
-    geom_linerange(data = dfp,
-                   aes(x = Participant,
-                       ymin = Lowest_Plausible_Pr,
-                       ymax = Highest_Plausible_Pr),
-                   linewidth = 0.8,color = "grey55") +
+    geom_linerange(data = dfp, aes(x = Participant,ymin = Lowest_Plausible_Pr,
+                                   ymax = Highest_Plausible_Pr),lwd = 0.8,color = "grey55") +
     # LPP and HPP endpoints
     geom_point(data = df_long %>% filter(Measure != "BGP"),
                aes(x = Participant, y = Value,shape = Measure),
@@ -441,22 +317,9 @@ build_individuals_plot <- function(df_raw,
       panel.grid.minor = element_blank())
   # Faceting
   if (has_round) {
-    
-    g <- g +
-      facet_wrap(
-        ~ Question_Round,
-        ncol = facet_cols,
-        scales = "fixed"
-      )
-    
+    g <- g + facet_wrap(~ Question_Round, ncol = n_facet_cols,scales = "fixed")
   } else {
-    
-    g <- g +
-      facet_wrap(
-        ~ Question,
-        ncol = facet_cols,
-        scales = "fixed"
-      )
+    g <- g + facet_wrap(~ Question, ncol = n_facet_cols,scales = "fixed")
   }
   
   # If you defined a smaller export theme and asked to use it, apply it
