@@ -28,7 +28,7 @@ validate_elicitation_data <- function(df,
                                       lpp_col,
                                       bgp_col,
                                       hpp_col,
-                                      dob_col = NULL,
+                                      AC_col = NULL,
                                       round_col = NULL) {
   
   problems <- character(0)
@@ -47,17 +47,17 @@ validate_elicitation_data <- function(df,
   )
   
   # Optional Assessment Confidence
-  if (!is.null(dob_col) &&
-      !identical(dob_col, "<none>") &&
-      dob_col %in% names(df)) {
+  if (!is.null(AC_col) &&
+      !identical(AC_col, "<none>") &&
+      AC_col %in% names(df)) {
     
-    check_df$DoB_raw <- df[[dob_col]]
-    check_df$DoB <- suppressWarnings(as.numeric(df[[dob_col]]))
+    check_df$AC_raw <- df[[AC_col]]
+    check_df$AC <- suppressWarnings(as.numeric(df[[AC_col]]))
     
   } else {
     
-    check_df$DoB_raw <- NA
-    check_df$DoB <- NA_real_
+    check_df$AC_raw <- NA
+    check_df$AC <- NA_real_
   }
   
   # Optional Round
@@ -324,18 +324,18 @@ validate_elicitation_data <- function(df,
     # Assessment confidence
     # -----------------------------------------------------------------------
     
-    if (!is.null(dob_col) &&
-        !identical(dob_col, "<none>") &&
-        dob_col %in% names(df)) {
+    if (!is.null(AC_col) &&
+        !identical(AC_col, "<none>") &&
+        AC_col %in% names(df)) {
       
-      dob_raw <- check_df$DoB_raw[i]
-      dob <- check_df$DoB[i]
+      AC_raw <- check_df$AC_raw[i]
+      AC <- check_df$AC[i]
       
-      # Missing DoB is allowed and will be interpreted as 100
-      if (!is.na(dob_raw) &&
-          trimws(as.character(dob_raw)) != "") {
+      # Missing AC is allowed and will be interpreted as 100
+      if (!is.na(AC_raw) &&
+          trimws(as.character(AC_raw)) != "") {
         
-        if (is.na(dob)) {
+        if (is.na(AC)) {
           
           problems <- c(
             problems,
@@ -345,7 +345,7 @@ validate_elicitation_data <- function(df,
             )
           )
           
-        } else if (dob < 0 || dob > 100) {
+        } else if (AC < 0 || AC > 100) {
           
           problems <- c(
             problems,

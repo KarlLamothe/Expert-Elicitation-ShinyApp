@@ -66,9 +66,3 @@ theme_export <- theme_bw() +
         legend.position = "bottom",
         legend.text = element_text(size = 9),
         legend.key.width = grid::unit(1.2, "cm"))
-
-#############################################################################
-# Identify google sheets URL
-#############################################################################
-sheet_url <- "https://docs.google.com/spreadsheets/d/1OAfvvG83svZCI0o_YvUsXN4SgrmIkk5oL_DNPRrJkC4/edit?usp=sharing"
-

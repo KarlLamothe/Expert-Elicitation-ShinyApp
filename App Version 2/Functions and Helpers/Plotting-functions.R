@@ -5,7 +5,7 @@
 build_density_plot <- function(r,
                                show_individual = TRUE,
                                show_beta = TRUE,
-                               show_dob_mix = TRUE,
+                               show_AC_mix = TRUE,
                                facet_cols = NULL) {
   
   p <- ggplot() +
@@ -30,8 +30,8 @@ build_density_plot <- function(r,
     p <- p + geom_line(data = r$dens_ind_all, aes(x = p,y = density,group = id),
                        alpha = 0.5,linewidth = 0.4,color = "grey55")}
   
-  # DoB-weighted mixture
-  if (isTRUE(show_dob_mix)) {
+  # AC-weighted mixture
+  if (isTRUE(show_AC_mix)) {
     p <- p + geom_line(
       data = r$dens_mix_w_all,aes(x = p, y = density, color = "AC-weighted mixture"),
       linewidth = 0.8)}
@@ -63,7 +63,7 @@ build_density_plot <- function(r,
 
 build_hist_plot <- function(r,
                             show_beta = TRUE,
-                            show_dob_mix = TRUE,
+                            show_AC_mix = TRUE,
                             facet_cols = NULL) {
   
   # Prepare histogram data for optional round faceting
@@ -114,7 +114,7 @@ build_hist_plot <- function(r,
     theme(axis.text.y = element_blank(), 
           axis.ticks.y = element_blank())
   
-  if (isTRUE(show_dob_mix)) {
+  if (isTRUE(show_AC_mix)) {
     p <- p +geom_line(data = r$dens_mix_w_all, 
                       aes(x = p, y = density,
                           color = "AC-weighted mixture",
@@ -142,7 +142,7 @@ build_hist_plot <- function(r,
 build_cdf_plot <- function(r,
                            show_individual = TRUE,
                            show_beta = TRUE,
-                           show_dob_mix = TRUE,
+                           show_AC_mix = TRUE,
                            facet_cols = NULL) {
   
   p <- ggplot() +
@@ -159,7 +159,7 @@ build_cdf_plot <- function(r,
                                      "Beta approximation" = "dashed")) +
     labs(x = "Probability",y = "Cumulative probability")
   
-  if (isTRUE(show_dob_mix)) {
+  if (isTRUE(show_AC_mix)) {
     p <- p + geom_line(data = r$cdf_mix_w_all, 
                        aes(p, cdf,
                            color = "AC-weighted mixture",

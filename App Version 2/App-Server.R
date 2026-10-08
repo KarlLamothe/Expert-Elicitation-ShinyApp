@@ -19,15 +19,11 @@ server <- function(input, output, session) {
         type = "error",duration = NULL)
     })
   })
-  
   output$download_template <- downloadHandler(
-    
     filename = function() {
       "expert_elicitation_response_template.csv"
     },
-    
     content = function(file) {
-      
       template <- data.frame(
         Question = c(1, 1, 1, 1),
         Round = c(1, 1, 2, 2),
@@ -37,20 +33,11 @@ server <- function(input, output, session) {
         Highest_Plausible_Pr = c(0.60, 0.75, 0.70, 0.75),
         Assessment_Confidence = c(70, 65, 85, 75)
       )
-      
-      write.csv(
-        template,
-        file,
-        row.names = FALSE,
-        na = ""
-      )
-    },
-    
+      write.csv(template, file, row.names = FALSE, na = "")},
     contentType = "text/csv"
   )
   
   output$refresh_status <- renderUI({
-    
     if (is.null(last_refresh())) {
       div(style = "
       background-color: #f5f5f5;
@@ -59,14 +46,13 @@ server <- function(input, output, session) {
       border-radius: 6px;
       margin-bottom: 10px;
       ",
-        
         tags$strong("Waiting for data"),
         tags$br(),
-        
         tags$span(
           style = "color: #666666;",
          "Expert responses have not been retrieved."))
     } else {
+      
       # Number of unique participants, if ID column is available
       n_exp <- NULL
       if (!is.null(input$col_id) &&
@@ -100,126 +86,57 @@ server <- function(input, output, session) {
   
   # Load data from the selected source
   raw_df <- reactive({
-    
     req(input$data_source)
-    
-    # Demo data
+    #Demo data
     if (identical(input$data_source, "demo")) {
-      return(demo_df)
-    }
-    
+      return(demo_df)}
     # Uploaded CSV
     if (identical(input$data_source, "csv")) {
-      
       req(input$csv_file)
-      
-      df <- read.csv(
-        input$csv_file$datapath,
-        stringsAsFactors = FALSE,
-        check.names = FALSE
-      )
-      
+      df <- read.csv(input$csv_file$datapath, stringsAsFactors = FALSE, check.names = FALSE)
       return(df)
     }
     
     # Google Sheets
     if (identical(input$data_source, "google")) {
-      
       req(sheet_data())
-      
       return(sheet_data())
     }
-    
     NULL
   })
   
   # Column mapping UI
   output$colmap_ui <- renderUI({
     req(raw_df())
-    
     df <- raw_df()
     cols <- names(df)
     default_question <- best_question_col(df)
-    
     tagList(
-      selectInput(
-        "col_question",
-        "Question column",
-        choices = c("Question", cols),
-        selected = if (default_question %in% cols) default_question else "<none>"
-      ),
+      selectInput("col_question", "Question column", choices = c("Question", cols),
+        selected = if (default_question %in% cols) default_question else "<none>"),
       
-      selectInput(
-        "col_id",
-        "Participant ID column",
-        choices = cols,
-        selected = if ("Participant" %in% cols) "Participant" else cols[1]
-      ),
+      selectInput("col_id", "Participant ID column", choices = cols,
+        selected = if ("Participant" %in% cols) "Participant" else cols[1]),
       
-      selectInput(
-        "col_lpp",
-        "Lowest plausible (LPP)",
-        choices = cols,
-        selected = grep(
-          "Lowest|LPP",
-          cols,
-          ignore.case = TRUE,
-          value = TRUE
-        )[1]
-      ),
+      selectInput("col_lpp", "Lowest plausible (LPP)", choices = cols,
+         selected = grep("Lowest|LPP", cols,ignore.case = TRUE, value = TRUE)[1]),
       
-      selectInput(
-        "col_bgp",
-        "Best guess (BGP)",
-        choices = cols,
-        selected = grep(
-          "Best|BGP",
-          cols,
-          ignore.case = TRUE,
-          value = TRUE
-        )[1]
-      ),
+      selectInput("col_bgp", "Best guess (BGP)", choices = cols,
+        selected = grep("Best|BGP",cols, ignore.case = TRUE, value = TRUE)[1]),
+     
+      selectInput("col_hpp", "Highest plausible (HPP)", choices = cols,
+        selected = grep("Highest|HPP", cols, ignore.case = TRUE, value = TRUE)[1]),
       
-      selectInput(
-        "col_hpp",
-        "Highest plausible (HPP)",
-        choices = cols,
-        selected = grep(
-          "Highest|HPP",
-          cols,
-          ignore.case = TRUE,
-          value = TRUE
-        )[1]
-      ),
-      
-      selectInput(
-        "col_dob",
-        "Assessment confidence (AC; optional)",
-        choices = c("<none>", cols),
-        selected = {
-          hit <- grep(
-            "Assessment.*Confidence|Confidence|Belief|DoB",
-            cols,
-            ignore.case = TRUE,
-            value = TRUE
-          )
-          
+      selectInput("col_AC", "Assessment confidence (AC; optional)", choices = c("<none>", cols),
+        selected = {hit <- grep( "Assessment.*Confidence|Confidence|Belief|DoB",
+                                 cols,ignore.case = TRUE, value = TRUE )
           if (length(hit) > 0) hit[1] else "<none>"
         }
       ),
       
-      selectInput(
-        "col_round",
-        "Elicitation round (optional)",
-        choices = c("<none>", cols),
-        selected = {
-          hit <- grep(
-            "^Round$|Elicitation.*Round|Response.*Round",
-            cols,
-            ignore.case = TRUE,
-            value = TRUE
-          )
-          
+      selectInput("col_round", "Elicitation round (optional)", choices = c("<none>", cols),
+        selected = { hit <- grep("^Round$|Elicitation.*Round|Response.*Round",
+            cols,ignore.case = TRUE, value = TRUE)
           if (length(hit) > 0) hit[1] else "<none>"
         }
       )
@@ -252,19 +169,17 @@ server <- function(input, output, session) {
     # Validate input data before analysis
     # -------------------------------------------------------------------------
     
-    dob_col_val <- if (
-      !is.null(input$col_dob) &&
-      !identical(input$col_dob, "<none>")
-    ) {
-      input$col_dob
+    AC_col_val <- if (
+      !is.null(input$col_AC) &&
+      !identical(input$col_AC, "<none>")) {
+      input$col_AC
     } else {
       NULL
     }
     
     round_col_val <- if (
       !is.null(input$col_round) &&
-      !identical(input$col_round, "<none>")
-    ) {
+      !identical(input$col_round, "<none>")) {
       input$col_round
     } else {
       NULL
@@ -277,9 +192,8 @@ server <- function(input, output, session) {
       lpp_col = input$col_lpp,
       bgp_col = input$col_bgp,
       hpp_col = input$col_hpp,
-      dob_col = dob_col_val,
-      round_col = round_col_val
-    )
+      AC_col = AC_col_val,
+      round_col = round_col_val)
     
     if (!validation$valid) {
       
@@ -303,16 +217,13 @@ server <- function(input, output, session) {
               }
             )
           ),
-          
           footer = modalButton("Close"),
           easyClose = TRUE,
           size = "l"
         )
       )
-      
       return(NULL)
     }
-    
     
     # If one or more questions chosen (not "All"), filter to those
     if (has_q && !is.null(input$question_multi)) {
@@ -321,7 +232,6 @@ server <- function(input, output, session) {
         df <- df %>% filter(.data[[q_col]] %in% sel)
       }
     }
-    
     qs <- unique(df[[q_col]])
     
     # -------------------------------------------------------------------------
@@ -330,22 +240,19 @@ server <- function(input, output, session) {
     if (is.null(round_col_val)) {
       
       res_list <- lapply(qs, function(q) {
-        
         df_q <- df %>%
           filter(.data[[q_col]] == q)
-        
         summarize_question_pert(
           df_q,
           id_col  = input$col_id,
           lpp_col = input$col_lpp,
           bgp_col = input$col_bgp,
           hpp_col = input$col_hpp,
-          dob_col = dob_col_val,
+          AC_col = AC_col_val,
           lambda  = input$lambda,
           Nsim    = input$Nsim,
           seed    = NULL,
-          question_label = as.character(q)
-        )
+          question_label = as.character(q))
       })
       
       names(res_list) <- as.character(qs)
@@ -356,36 +263,27 @@ server <- function(input, output, session) {
     } else {
       
       res_list <- lapply(qs, function(q) {
-        
         df_q <- df %>%
           filter(.data[[q_col]] == q)
-        
         rounds_q <- sort(unique(df_q[[round_col_val]]))
-        
         round_results <- lapply(rounds_q, function(r) {
-          
           df_qr <- df_q %>%
             filter(.data[[round_col_val]] == r)
-          
           summarize_question_pert(
             df_qr,
             id_col  = input$col_id,
             lpp_col = input$col_lpp,
             bgp_col = input$col_bgp,
             hpp_col = input$col_hpp,
-            dob_col = dob_col_val,
+            AC_col = AC_col_val,
             lambda  = input$lambda,
             Nsim    = input$Nsim,
             seed    = NULL,
-            question_label = as.character(q)
-          )
+            question_label = as.character(q))
         })
-        
         names(round_results) <- as.character(rounds_q)
-        
         round_results
       })
-      
       names(res_list) <- as.character(qs)
     }
     
@@ -395,11 +293,9 @@ server <- function(input, output, session) {
     # -------------------------------------------------------------------------
     
     # Only assess AC availability when an AC column was supplied
-    if (!is.null(dob_col_val)) {
-      
+    if (!is.null(AC_col_val)) {
       affected_fewer_than_two <- character(0)
       affected_all_zero <- character(0)
-      
       if (is.null(round_col_val)) {
         
         # ==============================================================
@@ -407,30 +303,21 @@ server <- function(input, output, session) {
         # ==============================================================
         
         for (q in names(res_list)) {
-          
           result_q <- res_list[[q]]
-          
           if (!isTRUE(result_q$AC_available)) {
-            
             if (identical(
               result_q$AC_unavailable_reason,
               "fewer_than_two"
             )) {
-              
               affected_fewer_than_two <- c(
                 affected_fewer_than_two,
-                paste0("Question ", q)
-              )
-              
+                paste0("Question ", q))
             } else if (identical(
               result_q$AC_unavailable_reason,
-              "all_zero"
-            )) {
-              
+              "all_zero")) {
               affected_all_zero <- c(
                 affected_all_zero,
-                paste0("Question ", q)
-              )
+                paste0("Question ", q))
             }
           }
         }
@@ -442,37 +329,24 @@ server <- function(input, output, session) {
         # ==============================================================
         
         for (q in names(res_list)) {
-          
           for (r in names(res_list[[q]])) {
-            
             result_qr <- res_list[[q]][[r]]
-            
             if (!isTRUE(result_qr$AC_available)) {
-              
               label <- paste0(
                 "Question ", q,
-                " (Round ", r, ")"
-              )
-              
+                " (Round ", r, ")")
               if (identical(
                 result_qr$AC_unavailable_reason,
                 "fewer_than_two"
               )) {
-                
                 affected_fewer_than_two <- c(
                   affected_fewer_than_two,
-                  label
-                )
-                
+                  label)
               } else if (identical(
                 result_qr$AC_unavailable_reason,
                 "all_zero"
               )) {
-                
-                affected_all_zero <- c(
-                  affected_all_zero,
-                  label
-                )
+                affected_all_zero <- c(affected_all_zero, label)
               }
             }
           }
@@ -485,7 +359,6 @@ server <- function(input, output, session) {
       # ---------------------------------------------------------------
       
       if (length(affected_fewer_than_two) > 0) {
-        
         showNotification(
           paste0(
             "Assessment Confidence-weighted results are unavailable for ",
@@ -506,20 +379,12 @@ server <- function(input, output, session) {
       # ---------------------------------------------------------------
       
       if (length(affected_all_zero) > 0) {
-        
         showNotification(
-          paste0(
-            "Assessment Confidence-weighted results are unavailable for ",
-            paste(
-              affected_all_zero,
-              collapse = ", "
-            ),
+          paste0("Assessment Confidence-weighted results are unavailable for ",
+            paste(affected_all_zero, collapse = ", "),
             " because all reported Assessment Confidence values are 0. ",
-            "Equal-weight results remain available."
-          ),
-          type = "warning",
-          duration = 10
-        )
+            "Equal-weight results remain available."),
+          type = "warning", duration = 10)
       }
     }
     
@@ -528,75 +393,41 @@ server <- function(input, output, session) {
     # -------------------------------------------------------------------------
     
     if (is.null(round_col_val)) {
-      
       # ==============================================================
       # SINGLE-ROUND DATA
       # Preserve the original structure
       # ==============================================================
-      
-      summary_all <- bind_rows(
-        lapply(res_list, `[[`, "summary")
-      )
-      
+      summary_all <- bind_rows(lapply(res_list, `[[`, "summary"))
       dens_mix_all <- bind_rows(
-        lapply(res_list, function(r) r$facet$mixture)
-      )
-      
+        lapply(res_list, function(r) r$facet$mixture))
       dens_mix_w_all <- bind_rows(
-        lapply(res_list, function(r) r$facet$mixture_w)
-      )
-      
+        lapply(res_list, function(r) r$facet$mixture_w))
       dens_ind_all <- bind_rows(
-        lapply(res_list, function(r) r$facet$individual)
-      )
-      
+        lapply(res_list, function(r) r$facet$individual))
       beta_all <- bind_rows(
-        lapply(res_list, function(r) r$facet$beta)
-      )
-      
+        lapply(res_list, function(r) r$facet$beta))
       beta_w_all <- bind_rows(
-        lapply(res_list, function(r) r$facet$beta_w)
-      )
-      
+        lapply(res_list, function(r) r$facet$beta_w))
       cdf_mix_all <- bind_rows(
-        lapply(res_list, function(r) r$facet$cdf_mixture)
-      )
-      
+        lapply(res_list, function(r) r$facet$cdf_mixture))
       cdf_mix_w_all <- bind_rows(
-        lapply(res_list, function(r) r$facet$cdf_mixture_w)
-      )
-      
+        lapply(res_list, function(r) r$facet$cdf_mixture_w))
       cdf_emp_all <- bind_rows(
-        lapply(res_list, function(r) r$facet$cdf_emp)
-      )
-      
+        lapply(res_list, function(r) r$facet$cdf_emp))
       cdf_emp_w_all <- bind_rows(
-        lapply(res_list, function(r) r$facet$cdf_emp_w)
-      )
-      
+        lapply(res_list, function(r) r$facet$cdf_emp_w))
       cdf_beta_all <- bind_rows(
-        lapply(res_list, function(r) r$facet$cdf_beta)
-      )
-      
+        lapply(res_list, function(r) r$facet$cdf_beta))
       cdf_beta_w_all <- bind_rows(
-        lapply(res_list, function(r) r$facet$cdf_beta_w)
-      )
-      
+        lapply(res_list, function(r) r$facet$cdf_beta_w))
       cdf_ind_all <- bind_rows(
-        lapply(res_list, function(r) r$facet$cdf_individual)
-      )
-      
+        lapply(res_list, function(r) r$facet$cdf_individual))
       samples_all <- bind_rows(
         lapply(names(res_list), function(q) {
-          tibble(
-            Question = q,
-            samples = res_list[[q]]$samples
-          )
+          tibble(Question = q, samples = res_list[[q]]$samples)
         })
       )
-      
     } else {
-      
       # ==============================================================
       # MULTI-ROUND DATA
       # Flatten Question -> Round -> Result into data frames
@@ -1065,7 +896,7 @@ server <- function(input, output, session) {
         r,
         show_individual = isTRUE(input$show_individual),
         show_beta = isTRUE(input$show_beta),
-        show_dob_mix = isTRUE(input$show_dob_mix),
+        show_AC_mix = isTRUE(input$show_AC_mix),
         facet_cols = dims$facet_cols
       )
       
@@ -1110,7 +941,7 @@ server <- function(input, output, session) {
       g <- build_hist_plot(
         r,
         show_beta = isTRUE(input$show_beta),
-        show_dob_mix = isTRUE(input$show_dob_mix),
+        show_AC_mix = isTRUE(input$show_AC_mix),
         facet_cols = dims$facet_cols
       )
       
@@ -1153,7 +984,7 @@ server <- function(input, output, session) {
         r,
         show_individual = isTRUE(input$show_individual),
         show_beta = isTRUE(input$show_beta),
-        show_dob_mix = isTRUE(input$show_dob_mix),
+        show_AC_mix = isTRUE(input$show_AC_mix),
         facet_cols = dims$facet_cols
       )
       
@@ -1193,16 +1024,16 @@ server <- function(input, output, session) {
       facet_cols <- dims$facet_cols
       show_ind     <- isTRUE(input$show_individual)
       show_beta    <- isTRUE(input$show_beta)
-      show_dob_mix <- isTRUE(input$show_dob_mix)
+      show_AC_mix <- isTRUE(input$show_AC_mix)
       
       # Build plots (respecting current toggle states)
       g1 <- build_density_plot(r, show_individual = show_ind,
-                               show_beta = show_beta, show_dob_mix = show_dob_mix,
+                               show_beta = show_beta, show_AC_mix = show_AC_mix,
                                facet_cols = facet_cols)
-      g2 <- build_hist_plot(r, show_beta = show_beta, show_dob_mix = show_dob_mix,
+      g2 <- build_hist_plot(r, show_beta = show_beta, show_AC_mix = show_AC_mix,
                             facet_cols = facet_cols)
       g3 <- build_cdf_plot(r, show_individual = show_ind,
-                           show_beta = show_beta, show_dob_mix = show_dob_mix,
+                           show_beta = show_beta, show_AC_mix = show_AC_mix,
                            facet_cols = facet_cols)
       g4 <- build_individuals_plot(
         df_raw = raw_df(),
@@ -1339,7 +1170,7 @@ server <- function(input, output, session) {
       r = results(),
       show_individual = isTRUE(input$show_individual),
       show_beta       = isTRUE(input$show_beta),
-      show_dob_mix    = isTRUE(input$show_dob_mix),
+      show_AC_mix    = isTRUE(input$show_AC_mix),
       facet_cols      = NULL   
     )
   })
@@ -1351,7 +1182,7 @@ server <- function(input, output, session) {
     build_hist_plot(
       r = results(),
       show_beta       = isTRUE(input$show_beta),
-      show_dob_mix    = isTRUE(input$show_dob_mix),
+      show_AC_mix    = isTRUE(input$show_AC_mix),
       facet_cols      = NULL
     )
   })
@@ -1364,7 +1195,7 @@ server <- function(input, output, session) {
       r = results(),
       show_individual = isTRUE(input$show_individual),
       show_beta       = isTRUE(input$show_beta),
-      show_dob_mix    = isTRUE(input$show_dob_mix),
+      show_AC_mix    = isTRUE(input$show_AC_mix),
       facet_cols      = NULL
     )
   })
@@ -1426,8 +1257,8 @@ server <- function(input, output, session) {
     # Use Round 2 metrics in cards for now
     s <- s2
     eqw_delta <- s2$EqW_Mean - s1$EqW_Mean
-    dob_delta <- s2$DoB_Mean - s1$DoB_Mean
-    conf_delta <- s2$Mean_DoB - s1$Mean_DoB
+    AC_delta <- s2$AC_Mean - s1$AC_Mean
+    conf_delta <- s2$Mean_AC - s1$Mean_AC
     
     delta_colour <- function(x) {
       
@@ -1488,14 +1319,14 @@ server <- function(input, output, session) {
         )
       ),
       
-      # DoB weighted mean
+      # AC weighted mean
       column(
         4,
         div(
           style = card_style,
           div(
-            style = value_style(delta_colour(dob_delta)),
-            sprintf("%+.3f", dob_delta)
+            style = value_style(delta_colour(AC_delta)),
+            sprintf("%+.3f", AC_delta)
           ),
           div(
             style = label_style,
@@ -1551,9 +1382,9 @@ server <- function(input, output, session) {
           div(
             style = value_style("#245674"),
             paste0(
-              sprintf("%.3f", s1$DoB_Mean),
+              sprintf("%.3f", s1$AC_Mean),
               " \u2192 ",
-              sprintf("%.3f", s2$DoB_Mean)
+              sprintf("%.3f", s2$AC_Mean)
             )
           ),
           div(
@@ -1591,8 +1422,8 @@ server <- function(input, output, session) {
       select(
         Question,
         EqW_Mean_R1 = EqW_Mean,
-        DoB_Mean_R1 = DoB_Mean,
-        Mean_DoB_R1 = Mean_DoB
+        AC_Mean_R1 = AC_Mean,
+        Mean_AC_R1 = Mean_AC
       )
     
     r2 <- summ %>%
@@ -1600,8 +1431,8 @@ server <- function(input, output, session) {
       select(
         Question,
         EqW_Mean_R2 = EqW_Mean,
-        DoB_Mean_R2 = DoB_Mean,
-        Mean_DoB_R2 = Mean_DoB
+        AC_Mean_R2 = AC_Mean,
+        Mean_AC_R2 = Mean_AC
       )
     
     left_join(r1, r2, by = "Question") %>%
@@ -1610,20 +1441,20 @@ server <- function(input, output, session) {
           EqW_Mean_R2 - EqW_Mean_R1,
         
         `Δ AC-weighted mean` =
-          DoB_Mean_R2 - DoB_Mean_R1,
+          AC_Mean_R2 - AC_Mean_R1,
         
         `Δ Assessment confidence` =
-          Mean_DoB_R2 - Mean_DoB_R1
+          Mean_AC_R2 - Mean_AC_R1
       ) %>%
       rename(
         `Equal-weight mean (R1)` = EqW_Mean_R1,
         `Equal-weight mean (R2)` = EqW_Mean_R2,
         
-        `AC-weighted mean (R1)` = DoB_Mean_R1,
-        `AC-weighted mean (R2)` = DoB_Mean_R2,
+        `AC-weighted mean (R1)` = AC_Mean_R1,
+        `AC-weighted mean (R2)` = AC_Mean_R2,
         
-        `Average Assessment confidence (R1)` = Mean_DoB_R1,
-        `Average Assessment confidence (R2)` = Mean_DoB_R2
+        `Average Assessment confidence (R1)` = Mean_AC_R1,
+        `Average Assessment confidence (R2)` = Mean_AC_R2
       ) %>%
     mutate(
       across(where(is.numeric), ~ round(.x, 2))

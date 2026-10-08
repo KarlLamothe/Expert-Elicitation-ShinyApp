@@ -74,7 +74,7 @@ ui <- fluidPage(
         ),
         
         checkboxInput(
-          "show_dob_mix",
+          "show_AC_mix",
           "Show assessment confidence-weighted mixture",
           TRUE
         ),

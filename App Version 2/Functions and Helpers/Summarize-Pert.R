@@ -7,7 +7,7 @@ summarize_question_pert <- function(df,
                                     lpp_col = "Lowest_Plausible_Pr",
                                     bgp_col = "Best_Guess_Pr",
                                     hpp_col = "Highest_Plausible_Pr",
-                                    dob_col = "Assessment_Confidence",          
+                                    AC_col = "Assessment_Confidence",          
                                     lambda  = 4,
                                     Nsim    = 40000,
                                     grid    = seq(0, 1, length.out = 1000),
@@ -37,21 +37,21 @@ summarize_question_pert <- function(df,
   # Assessment Confidence:
   # Missing values remain missing and are excluded from the
   # Assessment Confidence-weighted pool.
-  if (!is.null(dob_col) && dob_col %in% names(df)) {
-    raw_dob <- suppressWarnings(as.numeric(df[[dob_col]]))
+  if (!is.null(AC_col) && AC_col %in% names(df)) {
+    raw_AC <- suppressWarnings(as.numeric(df[[AC_col]]))
     # Values have already been validated by the application,
     # but retain bounds defensively.
-    raw_dob <- pmax(pmin(raw_dob, 100), 0)
-    df2$dob <- raw_dob
+    raw_AC <- pmax(pmin(raw_AC, 100), 0)
+    df2$AC <- raw_AC
   } else {
     # No Assessment Confidence data were supplied
-    df2$dob <- NA_real_
+    df2$AC <- NA_real_
   }
   
   # Identify participants who supplied Assessment Confidence
-  AC_observed <- !is.na(df2$dob)
+  AC_observed <- !is.na(df2$AC)
   N_AC <- sum(AC_observed)
-  total_ac <- sum(df2$dob[AC_observed], na.rm = TRUE)
+  total_ac <- sum(df2$AC[AC_observed], na.rm = TRUE)
   
   # Assessment Confidence weighting requires:
   #   1. at least two participants with observed AC; and
@@ -76,7 +76,7 @@ summarize_question_pert <- function(df,
   if (AC_available) {
     # Participants with missing AC do not enter the
     # Assessment Confidence-weighted pool.
-    w[AC_observed] <- df2$dob[AC_observed] / total_ac
+    w[AC_observed] <- df2$AC[AC_observed] / total_ac
   }
   
   # Equal-weight mixture
@@ -121,7 +121,7 @@ summarize_question_pert <- function(df,
   
   # Vectorized individual densities
   dens_individual <- df2 %>%
-    select(id, a, b, alpha, beta, dob) %>%
+    select(id, a, b, alpha, beta, AC) %>%
     crossing(p = grid) %>%
     mutate(
       density = if_else(
@@ -142,9 +142,9 @@ summarize_question_pert <- function(df,
   # AC-weighted Linear Opinion Pool
   if (AC_available) {
     dens_mixture_w <- dens_individual %>%
-      filter(!is.na(dob)) %>%
+      filter(!is.na(AC)) %>%
       group_by(p) %>%
-      summarise(density = weighted.mean(density, w = dob), .groups = "drop")
+      summarise(density = weighted.mean(density, w = AC), .groups = "drop")
   } else {
     dens_mixture_w <- tibble(p = grid, density = NA_real_)
   }
@@ -224,57 +224,57 @@ summarize_question_pert <- function(df,
     EqW_95th   = as.numeric(quantile(samples_eq, 0.95)),
     
     # AC-weighted columns
-    DoB_Mean = if (AC_available) {
+    AC_Mean = if (AC_available) {
       m_hat_w
     } else {
       NA_real_
     },
     
-    DoB_Median = if (AC_available) {
+    AC_Median = if (AC_available) {
       median(samples_w)
     } else {
       NA_real_
     },
     
-    DoB_5th = if (AC_available) {
+    AC_5th = if (AC_available) {
       as.numeric(quantile(samples_w, 0.05))
     } else {
       NA_real_
     },
     
-    DoB_95th = if (AC_available) {
+    AC_95th = if (AC_available) {
       as.numeric(quantile(samples_w, 0.95))
     } else {
       NA_real_
     },
     
     # assessment confidence summaries
-    Mean_DoB = if (N_AC > 0) {
-      mean(df2$dob, na.rm = TRUE)
+    Mean_AC = if (N_AC > 0) {
+      mean(df2$AC, na.rm = TRUE)
     } else {
       NA_real_
     },
     
-    Median_DoB = if (N_AC > 0) {
-      median(df2$dob, na.rm = TRUE)
+    Median_AC = if (N_AC > 0) {
+      median(df2$AC, na.rm = TRUE)
     } else {
       NA_real_
     },
     
-    Min_DoB = if (N_AC > 0) {
-      min(df2$dob, na.rm = TRUE)
+    Min_AC = if (N_AC > 0) {
+      min(df2$AC, na.rm = TRUE)
     } else {
       NA_real_
     },
     
-    Max_DoB = if (N_AC > 0) {
-      max(df2$dob, na.rm = TRUE)
+    Max_AC = if (N_AC > 0) {
+      max(df2$AC, na.rm = TRUE)
     } else {
       NA_real_
     },
     
     # Difference caused by AC weighting
-    DoB_Effect = if (AC_available) {
+    AC_Effect = if (AC_available) {
       m_hat_w - m_hat
     } else {
       NA_real_
@@ -296,7 +296,7 @@ summarize_question_pert <- function(df,
   
   # Cumulative density functions
   cdf_individual <- df2 %>%
-    select(id, a, b, alpha, beta, dob) %>%
+    select(id, a, b, alpha, beta, AC) %>%
     crossing(p = grid) %>%
     mutate(
       cdf = case_when(
@@ -321,9 +321,9 @@ summarize_question_pert <- function(df,
   # AC-weighted CDF mixture
   if (AC_available) {
     cdf_mixture_w <- cdf_individual %>%
-      filter(!is.na(dob)) %>%
+      filter(!is.na(AC)) %>%
       group_by(p) %>%
-      summarise(cdf = weighted.mean( cdf, w = dob), .groups = "drop")
+      summarise(cdf = weighted.mean( cdf, w = AC), .groups = "drop")
   } else {
     cdf_mixture_w <- tibble(p = grid,cdf = NA_real_)
   }
