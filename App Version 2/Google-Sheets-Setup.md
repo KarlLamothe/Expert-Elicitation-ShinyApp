@@ -262,4 +262,130 @@ Participants are not required to respond to every question or participate in eve
 
 ---
 
-# 8. Use Google Sheets
+# 8. Use Google Sheets in the Shiny Application
+
+After Google authentication and the facilitator spreadsheet have been configured, the Shiny application can retrieve the consolidated expert responses directly from Google Sheets.
+
+Before retrieving data, confirm that the participant responses have populated the `Facilitator` worksheet of the facilitator Google spreadsheet.
+
+## Retrieve Expert Responses
+
+1. Run:
+
+```text
+App Version 2/Run-Application.R
+```
+
+2. In the application sidebar, select:
+
+```text
+Google Sheets
+```
+
+as the data source.
+
+3. Select:
+
+```text
+Get Latest Expert Responses
+```
+
+The application retrieves the current contents of the `Facilitator` worksheet from the configured facilitator Google spreadsheet.
+
+4. Open **Column Mapping** and confirm that the application has correctly identified the relevant columns:
+
+```text
+Question
+Participant
+Lowest plausible estimate
+Best-guess estimate
+Highest plausible estimate
+Assessment Confidence
+Round
+```
+
+The `Notes` column may be retained in the source data but is not required for the quantitative analysis.
+
+5. Adjust the Column Mapping settings if any columns were not detected correctly.
+
+6. Under **Questions**, select the question or questions to display.
+
+7. Select:
+
+```text
+Run / Refresh Analysis
+```
+
+The application validates the retrieved responses before performing the analysis. If invalid responses are detected, the affected Question, Round, and response row are reported so that the source data can be corrected.
+
+## Refresh Responses During an Elicitation
+
+During an active elicitation exercise, participants can continue entering or revising responses in their individual Google spreadsheets.
+
+After participants submit new responses:
+
+1. Confirm that the new responses have propagated to the `Facilitator` worksheet in the facilitator Google spreadsheet.
+
+2. In the Shiny application, select:
+
+```text
+Get Latest Expert Responses
+```
+
+again to retrieve the updated data.
+
+3. Select:
+
+```text
+Run / Refresh Analysis
+```
+
+to update the analysis using the newly retrieved responses.
+
+These two actions perform different functions:
+
+```text
+Get Latest Expert Responses
+          ↓
+Retrieves the current data from Google Sheets
+
+Run / Refresh Analysis
+          ↓
+Validates and analyzes the data currently loaded in the application
+```
+
+Selecting **Run / Refresh Analysis** does not itself retrieve newly entered responses from Google Sheets. When participant responses have changed, use **Get Latest Expert Responses** first and then rerun the analysis.
+
+## Two-Round Elicitation Workflow
+
+For a two-round elicitation, a typical workflow is:
+
+```text
+Participants enter Round 1 responses
+                ↓
+Participant spreadsheets update
+                ↓
+Facilitator spreadsheet updates
+                ↓
+Confirm responses in the Facilitator worksheet
+                ↓
+Get Latest Expert Responses
+                ↓
+Run / Refresh Analysis
+                ↓
+Review aggregated Round 1 results
+                ↓
+Structured discussion
+                ↓
+Participants independently enter Round 2 responses
+                ↓
+Facilitator spreadsheet updates
+                ↓
+Confirm Round 2 responses in the Facilitator worksheet
+                ↓
+Get Latest Expert Responses
+                ↓
+Run / Refresh Analysis
+                ↓
+Compare Round 1 and Round 2 results
+```
