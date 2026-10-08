@@ -45,7 +45,7 @@ Locate:
 gs4_auth(email = "YOUR_GOOGLE_EMAIL")
 ```
 
-Replace `XXXXXX` with the email address of the Google account that has access to the facilitator spreadsheet.
+Replace `YOUR_GOOGLE_EMAIL` with the email address of the Google account that has access to the facilitator spreadsheet.
 
 For example:
 
