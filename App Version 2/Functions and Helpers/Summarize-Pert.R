@@ -224,25 +224,25 @@ summarize_question_pert <- function(df,
     EqW_95th   = as.numeric(quantile(samples_eq, 0.95)),
     
     # AC-weighted columns
-    AC_Mean = if (AC_available) {
+    ACW_Mean = if (AC_available) {
       m_hat_w
     } else {
       NA_real_
     },
     
-    AC_Median = if (AC_available) {
+    ACW_Median = if (AC_available) {
       median(samples_w)
     } else {
       NA_real_
     },
     
-    AC_5th = if (AC_available) {
+    ACW_5th = if (AC_available) {
       as.numeric(quantile(samples_w, 0.05))
     } else {
       NA_real_
     },
     
-    AC_95th = if (AC_available) {
+    ACW_95th = if (AC_available) {
       as.numeric(quantile(samples_w, 0.95))
     } else {
       NA_real_
@@ -274,7 +274,7 @@ summarize_question_pert <- function(df,
     },
     
     # Difference caused by AC weighting
-    AC_Effect = if (AC_available) {
+    ACW_Effect = if (AC_available) {
       m_hat_w - m_hat
     } else {
       NA_real_
