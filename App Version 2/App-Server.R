@@ -1257,7 +1257,7 @@ server <- function(input, output, session) {
     # Use Round 2 metrics in cards for now
     s <- s2
     eqw_delta <- s2$EqW_Mean - s1$EqW_Mean
-    AC_delta <- s2$AC_Mean - s1$AC_Mean
+    AC_delta <- s2$ACW_Mean - s1$ACW_Mean
     conf_delta <- s2$Mean_AC - s1$Mean_AC
     
     delta_colour <- function(x) {
@@ -1382,9 +1382,9 @@ server <- function(input, output, session) {
           div(
             style = value_style("#245674"),
             paste0(
-              sprintf("%.3f", s1$AC_Mean),
+              sprintf("%.3f", s1$ACW_Mean),
               " \u2192 ",
-              sprintf("%.3f", s2$AC_Mean)
+              sprintf("%.3f", s2$ACW_Mean)
             )
           ),
           div(
@@ -1422,7 +1422,7 @@ server <- function(input, output, session) {
       select(
         Question,
         EqW_Mean_R1 = EqW_Mean,
-        AC_Mean_R1 = AC_Mean,
+        ACW_Mean_R1 = ACW_Mean,
         Mean_AC_R1 = Mean_AC
       )
     
@@ -1431,7 +1431,7 @@ server <- function(input, output, session) {
       select(
         Question,
         EqW_Mean_R2 = EqW_Mean,
-        AC_Mean_R2 = AC_Mean,
+        ACW_Mean_R2 = ACW_Mean,
         Mean_AC_R2 = Mean_AC
       )
     
@@ -1441,7 +1441,7 @@ server <- function(input, output, session) {
           EqW_Mean_R2 - EqW_Mean_R1,
         
         `Δ AC-weighted mean` =
-          AC_Mean_R2 - AC_Mean_R1,
+          ACW_Mean_R2 - ACW_Mean_R1,
         
         `Δ Assessment confidence` =
           Mean_AC_R2 - Mean_AC_R1
@@ -1450,8 +1450,8 @@ server <- function(input, output, session) {
         `Equal-weight mean (R1)` = EqW_Mean_R1,
         `Equal-weight mean (R2)` = EqW_Mean_R2,
         
-        `AC-weighted mean (R1)` = AC_Mean_R1,
-        `AC-weighted mean (R2)` = AC_Mean_R2,
+        `AC-weighted mean (R1)` = ACW_Mean_R1,
+        `AC-weighted mean (R2)` = ACW_Mean_R2,
         
         `Average Assessment confidence (R1)` = Mean_AC_R1,
         `Average Assessment confidence (R2)` = Mean_AC_R2
