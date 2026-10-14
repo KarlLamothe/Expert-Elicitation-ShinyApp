@@ -144,6 +144,9 @@ ui <- fluidPage(
                        class = "btn-default btn-sm"),
         downloadButton("download_all_plots_zip", "All Outputs (ZIP)",
                        class = "btn-default btn-sm"),
+        downloadButton("download_report_html", "Facilitator Report (HTML)",
+                       class = "btn-default btn-sm"),
+        
         br(), br(),
         tags$strong("Individual plots"),
         br(), br(),

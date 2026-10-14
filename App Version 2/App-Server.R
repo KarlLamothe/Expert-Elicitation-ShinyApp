@@ -800,7 +800,6 @@ server <- function(input, output, session) {
     )
   }, ignoreInit = TRUE)
   
-  
   ###########################################################################
   # Single PNG downloads (use current selections in results()) 
   ###########################################################################
@@ -1474,6 +1473,16 @@ server <- function(input, output, session) {
       readr::write_csv(results()$summaries, file)
     }
   )
+  
+  output$download_report_html <- downloadHandler(
+    filename = function() {
+      paste0("Expert_Elicitation_Report_",
+             format(Sys.time(), "%Y%m%d_%H%M"), ".html")},
+    content = function(file) {
+      req(results())
+      report_data <- build_report_data(results_obj = results())
+      render_facilitator_report(report_data,file)})
+  
 }
 
 # Run app
