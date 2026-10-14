@@ -286,8 +286,13 @@ Version 2 supports:
 - displaying simulated mixture distributions by question and round;
 - displaying cumulative distribution functions by question and round;
 - retrieving updated expert responses during an elicitation exercise;
-- summarizing Round 1 versus Round 2 changes; and
-- exporting summaries and visualizations.
+- summarizing Round 1 versus Round 2 changes; 
+- exporting summaries and visualizations;
+- generating automated facilitator reports;
+- producing executive summaries and key findings;
+- identifying facilitator warnings;
+- visualizing questions exhibiting the largest revision following discussion; and
+- visualizing questions exhibiting the greatest divergence in expert judgement.
 
 ## Input Methods
 
@@ -430,6 +435,14 @@ App Version 2/
 │   ├── Plotting-functions.R
 │   └── Summarize-Pert.R
 │
+├── Reporting/
+│   ├── Facilitator_report.Rmd
+│   ├── Report_data.R
+│   ├── Report_diagnostics.R
+│   ├── Report_export.R
+│   ├── Report_narrative.R
+│   └── Report_plots.R
+|
 ├── Google-Sheets-Setup.md
 └── README.md
 ```
@@ -439,6 +452,44 @@ App Version 2/
 The `Functions and Helpers` directory contains supporting functions for processing, aggregation, simulation, and visualization.
 
 The `Data` directory contains demonstration data that can be used to explore both the assessment confidence and multi-round functionality without using responses from an active elicitation exercise.
+
+The `Reporting` directory contains the functions used to generate automated facilitator reports, including report data preparation, diagnostics, narrative generation, visualizations, and report export.
+
+## Facilitator Reporting
+
+Version 2 includes an automated Facilitator Report that summarizes elicitation results and highlights patterns that may warrant further review.
+
+The report is generated directly from the application and can be downloaded as an HTML document.
+
+# Report Contents:
+
+The Facilitator Report currently includes:
+
+Executive Summary;
+- Key Findings;
+- Facilitator Warnings;
+- Participation Summary;
+- Question Summary;
+- Revision Following Discussion;
+- Stability Following Discussion;
+- Assessment Confidence Change;
+- Assessment Confidence Weighting Effects;
+- Assessment Confidence Summary;
+- Divergent Judgement;
+- Incomplete Participation; and
+- Automated diagnostic visualizations.
+
+# Automated Diagnostics
+
+The reporting framework currently evaluates:
+- revision following discussion;
+- stability following discussion;
+- changes in assessment confidence;
+- assessment confidence weighting effects;
+- divergence in expert judgement; and
+- incomplete participation between elicitation rounds.
+
+These diagnostics are intended to assist facilitators in interpreting elicitation outcomes rather than requiring manual review of all tables and figures.
 
 ## Running Version 2
 
@@ -458,6 +509,6 @@ Version 2 is the current version of the Expert Elicitation Shiny App under activ
 
 The original implementation is retained as Version 1 to support reproducibility and comparison with subsequent developments.
 
-Version 2 currently extends the original framework through **Assessment confidence weighting** and **optional multi-round elicitation**, allowing changes in expert judgements and reported confidence following structured discussion to be examined explicitly.
+Version 2 extends the original framework through assessment confidence weighting, optional multi-round elicitation, and automated facilitator reporting. In addition to reproducing elicited distributions and pooled summaries, Version 2 identifies revision following discussion, stability between rounds, changes in assessment confidence, assessment confidence weighting effects, divergence in expert judgement, and incomplete participation. These diagnostics are summarized through downloadable facilitator reports that combine narrative summaries, tabular diagnostics, warnings, and visualizations.
 
 Version 2 can do everything that Version 1 did, AND MORE! And its prettier. So that's cool too :)
