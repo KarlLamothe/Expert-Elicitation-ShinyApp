@@ -417,6 +417,42 @@ Participant identifiers are used internally where required for analysis, includi
 
 Participant identifiers are not displayed in group-facing visualizations or input-validation messages. Individual expert estimates and distributions can therefore be examined without directly identifying participants in the displayed outputs.
 
+## Facilitator Reporting
+
+Version 2 includes an automated Facilitator Report that summarizes elicitation results and highlights patterns that may warrant further review.
+
+The report is generated directly from the application and can be downloaded as an HTML document.
+
+# Report Contents:
+
+The Facilitator Report currently includes:
+
+Executive Summary;
+- Key Findings;
+- Facilitator Warnings;
+- Participation Summary;
+- Question Summary;
+- Revision Following Discussion;
+- Stability Following Discussion;
+- Assessment Confidence Change;
+- Assessment Confidence Weighting Effects;
+- Assessment Confidence Summary;
+- Divergent Judgement;
+- Incomplete Participation; and
+- Automated diagnostic visualizations.
+
+# Automated Diagnostics
+
+The reporting framework currently evaluates:
+- revision following discussion;
+- stability following discussion;
+- changes in assessment confidence;
+- assessment confidence weighting effects;
+- divergence in expert judgement; and
+- incomplete participation between elicitation rounds.
+
+These diagnostics are intended to assist facilitators in interpreting elicitation outcomes rather than requiring manual review of all tables and figures.
+
 ## Repository Structure
 
 ```text
@@ -455,41 +491,6 @@ The `Data` directory contains demonstration data that can be used to explore bot
 
 The `Reporting` directory contains the functions used to generate automated facilitator reports, including report data preparation, diagnostics, narrative generation, visualizations, and report export.
 
-## Facilitator Reporting
-
-Version 2 includes an automated Facilitator Report that summarizes elicitation results and highlights patterns that may warrant further review.
-
-The report is generated directly from the application and can be downloaded as an HTML document.
-
-# Report Contents:
-
-The Facilitator Report currently includes:
-
-Executive Summary;
-- Key Findings;
-- Facilitator Warnings;
-- Participation Summary;
-- Question Summary;
-- Revision Following Discussion;
-- Stability Following Discussion;
-- Assessment Confidence Change;
-- Assessment Confidence Weighting Effects;
-- Assessment Confidence Summary;
-- Divergent Judgement;
-- Incomplete Participation; and
-- Automated diagnostic visualizations.
-
-# Automated Diagnostics
-
-The reporting framework currently evaluates:
-- revision following discussion;
-- stability following discussion;
-- changes in assessment confidence;
-- assessment confidence weighting effects;
-- divergence in expert judgement; and
-- incomplete participation between elicitation rounds.
-
-These diagnostics are intended to assist facilitators in interpreting elicitation outcomes rather than requiring manual review of all tables and figures.
 
 ## Running Version 2
 
