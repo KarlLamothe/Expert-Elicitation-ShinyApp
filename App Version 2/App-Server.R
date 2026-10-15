@@ -832,7 +832,7 @@ server <- function(input, output, session) {
   output$download_participants_png <- downloadHandler(
     
     filename = function() {
-      paste0("expert_estimates_", Sys.Date(), ".png")
+      paste0("expert_estimates_", format(Sys.time(), "%Y%m%d_%H%M"), ".png")
     },
     
     content = function(file) {
@@ -881,7 +881,7 @@ server <- function(input, output, session) {
   output$download_density_png <- downloadHandler(
     
     filename = function() {
-      paste0("density_", Sys.Date(), ".png")
+      paste0("density_", format(Sys.time(), "%Y%m%d_%H%M"), ".png")
     },
     
     content = function(file) {
@@ -927,7 +927,7 @@ server <- function(input, output, session) {
   output$download_hist_png <- downloadHandler(
     
     filename = function() {
-      paste0("histogram_", Sys.Date(), ".png")
+      paste0("histogram_", format(Sys.time(), "%Y%m%d_%H%M"), ".png")
     },
     
     content = function(file) {
@@ -969,7 +969,7 @@ server <- function(input, output, session) {
   output$download_cdf_png <- downloadHandler(
     
     filename = function() {
-      paste0("cdf_", Sys.Date(), ".png")
+      paste0("cdf_", format(Sys.time(), "%Y%m%d_%H%M"), ".png")
     },
     
     content = function(file) {
@@ -1013,7 +1013,7 @@ server <- function(input, output, session) {
   # ZIP files
   ###########################################################################
   output$download_all_plots_zip <- downloadHandler(
-    filename = function() paste0("elicitation_plots_", Sys.Date(), ".zip"),
+    filename = function() paste0("elicitation_plots_", format(Sys.time(), "%Y%m%d_%H%M"), ".zip"),
     content = function(file) {
       req(results())
       r <- results()
@@ -1467,7 +1467,7 @@ server <- function(input, output, session) {
   })
   
   output$download_summary <- downloadHandler(
-    filename = function() paste0("elicitation_summaries_", Sys.time(),".csv"),
+    filename = function() paste0("elicitation_summaries_", format(Sys.time(), "%Y%m%d_%H%M"),".csv"),
     content = function(file) {
       req(results())
       readr::write_csv(results()$summaries, file)
