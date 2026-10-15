@@ -344,7 +344,7 @@ generate_warnings <- function(report_data){
     top_acw <- top_acw %>%
       slice(1)
     
-    if(abs(top_acw$ACW_Effect[1]) > 0.01){
+    if(abs(top_acw$ACW_Effect[1]) > 0.05){
       
       warnings <- c(
         warnings,
