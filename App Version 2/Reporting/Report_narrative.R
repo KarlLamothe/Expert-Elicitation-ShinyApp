@@ -94,7 +94,7 @@ generate_revision_narrative <- function(report_data){
   paste0(
     "The largest revision following discussion occurred for Question ",
     top_rev$Question,
-    ", where the Equal-Weight pooled mean changed by ",
+    ", where the equal-weight pooled mean changed by ",
     round(top_rev$Revision, 3),
     "."
   )
@@ -109,7 +109,7 @@ generate_high_confidence_narrative <- function(report_data){
     top_conf$Question,
     " (Round ",
     top_conf$Round,
-    "), with a Mean AC of ",
+    "), with a mean assessment confidence of ",
     round(top_conf$Mean_AC, 1),
     "%."
   )
@@ -124,7 +124,7 @@ generate_low_confidence_narrative <- function(report_data){
     low_conf$Question,
     " (Round ",
     low_conf$Round,
-    "), with a Mean AC of ",
+    "), with a mean assessment confidence of ",
     round(low_conf$Mean_AC, 1),
     "%."
   )
@@ -149,7 +149,7 @@ generate_acw_effect_narrative <- function(report_data){
     top_acw$Question,
     " (Round ",
     top_acw$Round,
-    "), where AC-weighting changed the pooled mean by ",
+    "), where assessment confidence-weighting changed the pooled mean by ",
     round(top_acw$ACW_Effect, 3),
     "."
   )
@@ -195,7 +195,7 @@ generate_stability_narrative <- function(report_data){
   paste0(
     "The most stable question was Question ",
     most_stable$Question,
-    ", with a change in Equal-Weight pooled mean of only ",
+    ", with a change in equal-weight pooled mean of only ",
     round(most_stable$Abs_Revision, 3),
     " between rounds."
   )
@@ -217,7 +217,7 @@ generate_spread_narrative <- function(report_data){
     top_div$Question,
     " (Round ",
     top_div$Round,
-    "), where the Equal-Weight 90% interval spanned ",
+    "), where the equal-weight 90% interval spanned ",
     round(top_div$Spread, 3),
     "."
   )
@@ -308,7 +308,7 @@ generate_warnings <- function(report_data){
       warnings <- c(warnings, paste0(
           "Question ",
           top_div$Question,
-          " exhibited substantial spread in expert judgement (90% interval width = ",
+          " exhibited substantial spread in expert judgement (equal-weight 90% interval width = ",
           round(top_div$Spread, 3),
           ")."))
     }

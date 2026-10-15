@@ -2,14 +2,25 @@
 
 build_report_data <- function(results_obj){
   summary_tbl <- results_obj$summaries
+  
+  n_questions <- length(unique(summary_tbl$Question))
+  
+  n_rounds <- if ("Round" %in% names(summary_tbl)) {
+    length(unique(summary_tbl$Round))
+  } else {
+    1
+  }
+  
   participation <- tibble::tibble(
     Metric = c(
       "Questions",
+      "Rounds",
       "Mean Participants",
       "Mean AC Response Rate"
     ),
     Value = c(
-      nrow(summary_tbl),
+      n_questions,
+      n_rounds,
       round(mean(summary_tbl$N_Participants), 1),
       round(mean(summary_tbl$AC_Response_Rate, na.rm = TRUE) * 100, 1)
     )

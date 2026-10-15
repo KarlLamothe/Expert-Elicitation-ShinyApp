@@ -10,6 +10,8 @@ params:
   report_data: NULL
 ---
 
+This report summarizes the results of a structured expert elicitation exercise and provides diagnostic summaries to support interpretation of elicited judgements, assessment confidence, and multi-round elicitation outcomes.
+
 **Generated:** `r params$report_data$metadata$generated`
 
 ```{r setup, include=FALSE}
@@ -23,6 +25,7 @@ cat("
 
 body {
   font-size: 16px;
+  line-height: 1.6;
 }
 
 h1 {
@@ -42,6 +45,25 @@ h2 {
   font-size: 15px;
 }
 
+.main-container {
+  max-width: 1000px;
+}
+
+.key-findings-box {
+  background-color: #f8f9fa;
+  border-left: 6px solid #1F5A7A;
+  padding: 15px;
+  margin-top: 10px;
+  margin-bottom: 25px;
+  border-radius: 4px;
+}
+
+.key-findings-title {
+  font-weight: 700;
+  font-size: 18px;
+  margin-bottom: 10px;
+}
+
 </style>
 ")
 ```
@@ -54,23 +76,83 @@ The following summary highlights key patterns identified in the elicitation resu
 cat(generate_executive_summary(report_data))
 ```
 
-# Key Findings
 
-- `r generate_revision_narrative(report_data)`
+```{r, results='asis'}
 
-- `r generate_high_confidence_narrative(report_data)`
+cat("<div class='key-findings-box'>")
 
-- `r generate_low_confidence_narrative(report_data)`
+cat("<div class='key-findings-title'>Key Findings</div>")
 
-- `r generate_acw_effect_narrative(report_data)`
+cat("<ul>")
 
-- `r generate_ac_change_narrative(report_data)`
+cat(
+  paste0(
+    "<li>",
+    generate_revision_narrative(report_data),
+    "</li>"
+  )
+)
 
-- `r generate_stability_narrative(report_data)`
+cat(
+  paste0(
+    "<li>",
+    generate_high_confidence_narrative(report_data),
+    "</li>"
+  )
+)
 
-- `r generate_spread_narrative(report_data)`
+cat(
+  paste0(
+    "<li>",
+    generate_low_confidence_narrative(report_data),
+    "</li>"
+  )
+)
 
-- `r generate_participation_narrative(report_data)`
+cat(
+  paste0(
+    "<li>",
+    generate_acw_effect_narrative(report_data),
+    "</li>"
+  )
+)
+
+cat(
+  paste0(
+    "<li>",
+    generate_ac_change_narrative(report_data),
+    "</li>"
+  )
+)
+
+cat(
+  paste0(
+    "<li>",
+    generate_stability_narrative(report_data),
+    "</li>"
+  )
+)
+
+cat(
+  paste0(
+    "<li>",
+    generate_spread_narrative(report_data),
+    "</li>"
+  )
+)
+
+cat(
+  paste0(
+    "<li>",
+    generate_participation_narrative(report_data),
+    "</li>"
+  )
+)
+
+cat("</ul>")
+cat("</div>")
+
+```
 
 # Facilitator Warnings
 
@@ -91,9 +173,10 @@ if(length(warnings) == 1 &&
 # Participation Summary
 
 ```{r}
-knitr::kable(
-  report_data$participation
-)
+report_data$participation %>%
+  kbl() %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"),
+    full_width = FALSE,position = "left")
 ```
 
 # Question Summary
@@ -110,14 +193,16 @@ report_data$summary %>%
 
 # Revision Following Discussion
 
+The table below summarizes differences in equal-weight means between rounds.
+
 ```{r}
 if(!is.null(report_data$revision)){
   report_data$revision %>%
     select(Question, `1`, `2`, Revision) %>%
+    rename(`Round 1` = `1`,`Round 2` = `2`) %>%
     kbl(digits = 3) %>%
-    kable_styling(
-      bootstrap_options = c("striped", "hover", "condensed"),
-      full_width = FALSE, position = "left")
+    kable_styling(bootstrap_options = c("striped", "hover", "condensed"),
+                  full_width = FALSE, position = "left")
 } else {
   knitr::asis_output("This diagnostic is only available when multiple elicitation rounds are analyzed.")
 }
@@ -135,14 +220,18 @@ if(!is.null(report_data$revision)){
 }
 ```
 
+*Figure. Equal-weight pooled distributions for the question exhibiting the greatest revision following discussion. The distributions represent Round 1 and Round 2 estimates separately, allowing the effect of discussion on the pooled judgement to be visualized.*
+
+
 # Stability Following Discussion
 
-The table below identifies questions exhibiting the smallest changes in pooled mean estimates between rounds.
+The table below identifies questions exhibiting the smallest changes in mean equal-weight estimates between rounds.
 
 ```{r}
 if(!is.null(report_data$stability)){
   report_data$stability %>%
     select(Question, `1`, `2`, Revision) %>%
+    rename(`Round 1` = `1`,`Round 2` = `2`) %>%
     kbl(digits = 3) %>%
     kable_styling(bootstrap_options = c("striped","hover","condensed"),
                   full_width = FALSE, position = "left")
@@ -152,6 +241,8 @@ if(!is.null(report_data$stability)){
 ```
 
 # Assessment Confidence Weighting Effects
+
+The table below ranks questions by assessment confidence weighted effects.
 
 ```{r}
 acw_tbl <- report_data$summary %>%
@@ -183,6 +274,7 @@ The table below summarizes changes in mean assessment confidence between rounds.
 if(!is.null(report_data$ac_change)){
   report_data$ac_change %>%
     select(Question, `1`, `2`, AC_Change) %>%
+    rename(`Round 1` = `1`,`Round 2` = `2`) %>%
     kbl(digits = 3) %>%
     kable_styling(bootstrap_options = c("striped","hover","condensed"),
                   full_width = FALSE, position = "left")
@@ -191,9 +283,9 @@ if(!is.null(report_data$ac_change)){
 }
 ```
 
-# Divergent Judgement
+# Variation in Expert Judgement
 
-The table below ranks questions according to the spread of the Equal-Weight pooled distribution.
+The table below ranks questions according to the spread of the equal-weight pooled distribution.
 
 ```{r}
 report_data$spread %>%
@@ -209,19 +301,19 @@ report_data$spread %>%
 top_div <- report_data$spread %>%
   slice(1)
 build_spread_plot(report_data)
-
 ```
+
+*Figure. Individual expert distributions (grey), the equal-weight pooled distribution (black), and the assessment confidence-weighted pooled distribution (orange) for the question exhibiting the greatest distribution spread.*
 
 # Incomplete Participation
 
-Differences in participation between rounds may influence the interpretation
-of revision following discussion and assessment confidence metrics.
 The table below summarizes participant retention for each question.
 
 ```{r}
 if(!is.null(report_data$participation_change)){
   report_data$participation_change %>%
     select(Question, `1`, `2`,Participation_Retention) %>%
+    rename(`Round 1` = `1`,`Round 2` = `2`) %>%
     kbl(digits = 3) %>%
     kable_styling(bootstrap_options = c("striped", "hover","condensed"),
                   full_width = FALSE, position = "left")

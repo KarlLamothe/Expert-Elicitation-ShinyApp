@@ -27,15 +27,8 @@ calculate_revision_summary <- function(summary_tbl){
   }
   
   revision_tbl <- summary_tbl %>%
-    dplyr::select(
-      Question,
-      Round,
-      EqW_Mean
-    ) %>%
-    tidyr::pivot_wider(
-      names_from = Round,
-      values_from = EqW_Mean
-    )
+    dplyr::select(Question, Round, EqW_Mean) %>%
+    tidyr::pivot_wider(names_from = Round, values_from = EqW_Mean)
   
   # Must have both rounds
   if(!all(c("1", "2") %in% names(revision_tbl))){
@@ -44,9 +37,7 @@ calculate_revision_summary <- function(summary_tbl){
   
   revision_tbl %>%
     dplyr::mutate(
-      Revision = `2` - `1`,
-      Abs_Revision = abs(Revision)
-    ) %>%
+      Revision = `2` - `1`, Abs_Revision = abs(Revision)) %>%
     dplyr::arrange(desc(Abs_Revision))
   
 }
