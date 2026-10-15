@@ -29,11 +29,15 @@ This version is retained to preserve the original implementation of the elicitat
 
 ---
 
-### Version 2: Assessment Confidence and Multi-Round Elicitation
+### Version 2: Assessment Confidence, Multi-Round Elicitation, and Facilitator Reporting
 
 `App Version 2` contains the current implementation of the application.
 
-Version 2 extends the base framework in two primary ways.
+Version 2 extends the base framework in three ways.
+
+1. **Assessment Confidence-weighted aggregation**, allowing expert-reported confidence to influence pooled distributions;
+2. **Optional multi-round elicitation**, allowing expert judgements to be compared before and after structured discussion; and
+3. **Automated facilitator reporting**, providing narrative summaries, diagnostics, warnings, and visualizations to support interpretation of elicitation results.
 
 #### Assessment Confidence
 
@@ -63,11 +67,37 @@ The objective of the discussion is not to force consensus. Experts may retain th
 
 The application provides Question × Round visualizations and summarizes changes between rounds, including:
 
-- change in the equal-weight pooled mean;
-- change in the assessment confidence-weighted pooled mean; and
-- change in average assessment confidence.
+- revision following discussion;
+- stability following discussion;
+- changes in average assessment confidence; and
+- participation retention.
 
-Multi-round analysis is optional. Version 2 continues to support single-round datasets, including datasets without a Round variable.
+Multi-round analysis is optional. Version 2 continues to support single-round datasets.
+
+## Facilitator Reporting
+
+Version 2 includes an automated reporting framework designed to assist facilitators with interpretation of elicitation outcomes.
+
+Reports are generated directly from application outputs and include:
+
+- Executive Summary;
+- Key Findings;
+- Facilitator Warnings;
+- Participation Summary;
+- Question Summary;
+- Assessment Confidence Summaries;
+- Assessment Confidence Weighting Effects;
+- Revision Following Discussion;
+- Stability Following Discussion;
+- Distribution Spread;
+- Participation Retention; and
+- Automated diagnostic visualizations.
+
+Diagnostic visualizations currently highlight:
+- questions exhibiting the largest revision following discussion; and
+- questions exhibiting the greatest distribution spread.
+
+Reports are exported as self-contained HTML documents suitable for review, archiving, and distribution to participants and stakeholders.
 
 ## Repository Structure
 
@@ -91,6 +121,7 @@ Expert-Elicitation-ShinyApp/
     ├── Run-Application.R
     ├── Data/
     ├── Functions and Helpers/
+    ├── Reporting/
     ├── Google-Sheets-Setup.md
     └── README.md
 ```
