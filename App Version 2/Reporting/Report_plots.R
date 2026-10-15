@@ -29,9 +29,13 @@ build_revision_plot <- function(report_data){
           legend.title=element_blank())
 }
 
-build_divergence_plot <- function(report_data){
+build_spread_plot <- function(report_data){
   
-  top_div <- report_data$divergence %>%
+  if(is.null(report_data$spread)){
+    return(NULL)
+  }
+  
+  top_div <- report_data$spread %>%
     slice(1)
   
   # Individual expert densities

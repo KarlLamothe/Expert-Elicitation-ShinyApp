@@ -1,7 +1,6 @@
 ---
 title: "Expert Elicitation Facilitator Report"
 author: "Expert Elicitation Application"
-date: "`r Sys.Date()`"
 output:
   html_document:
     toc: true
@@ -11,17 +10,41 @@ params:
   report_data: NULL
 ---
 
+**Generated:** `r params$report_data$metadata$generated`
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
 report_data <- params$report_data
-
 ```
 
-# Metadata
+```{r css, echo=FALSE, results='asis'}
+cat("
+<style>
 
-**Generated:** `r report_data$metadata$generated`
+body {
+  font-size: 16px;
+}
 
-**App Version:** `r report_data$metadata$app_version`
+h1 {
+  margin-top: 50px;
+  margin-bottom: 15px;
+  font-size: 32px;
+}
+
+h2 {
+  margin-top: 30px;
+  margin-bottom: 10px;
+  font-size: 24px;
+}
+
+.table {
+  margin-bottom: 25px;
+  font-size: 15px;
+}
+
+</style>
+")
+```
 
 # Executive Summary
 
@@ -45,7 +68,7 @@ cat(generate_executive_summary(report_data))
 
 - `r generate_stability_narrative(report_data)`
 
-- `r generate_divergence_narrative(report_data)`
+- `r generate_spread_narrative(report_data)`
 
 - `r generate_participation_narrative(report_data)`
 
@@ -54,7 +77,6 @@ cat(generate_executive_summary(report_data))
 The following observations may warrant additional discussion or review.
 
 ```{r, results='asis'}
-
 warnings <- generate_warnings(report_data)
 if(length(warnings) == 1 &&
   warnings == "No notable facilitator warnings were identified.") {
@@ -81,26 +103,23 @@ The table below summarizes all elicitation questions.
 ```{r}
 report_data$summary %>%
   select(Question, Round, EqW_Mean, ACW_Mean, Mean_AC, N_Participants) %>%
-  kbl(caption = "Question Summary", digits = 3) %>%
-  kable_styling( bootstrap_options = c("striped", "hover", "condensed"),
-                 full_width = FALSE)
+  kbl(digits = 3) %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"),
+                full_width = FALSE, position = "left")
 ```
 
 # Revision Following Discussion
 
 ```{r}
-
 if(!is.null(report_data$revision)){
-
   report_data$revision %>%
     select(Question, `1`, `2`, Revision) %>%
-    kbl(caption = "Change in Equal-Weight pooled mean between rounds",
-      digits = 3) %>%
+    kbl(digits = 3) %>%
     kable_styling(
       bootstrap_options = c("striped", "hover", "condensed"),
-      full_width = FALSE)
+      full_width = FALSE, position = "left")
 } else {
-  cat("Revision analysis is not available for single-round elicitation exercises.")
+  knitr::asis_output("This diagnostic is only available when multiple elicitation rounds are analyzed.")
 }
 
 ```
@@ -108,19 +127,12 @@ if(!is.null(report_data$revision)){
 # Largest Revision Following Discussion
 
 ```{r}
-
 if(!is.null(report_data$revision)){
-
   build_revision_plot(report_data)
-
 } else {
-
-  cat(
-    "Revision visualizations are only available for multi-round elicitation exercises."
-  )
-
+  knitr::asis_output(
+    "Revision visualizations are only available for multi-round elicitation exercises.")
 }
-
 ```
 
 # Stability Following Discussion
@@ -128,35 +140,27 @@ if(!is.null(report_data$revision)){
 The table below identifies questions exhibiting the smallest changes in pooled mean estimates between rounds.
 
 ```{r}
-
 if(!is.null(report_data$stability)){
   report_data$stability %>%
     select(Question, `1`, `2`, Revision) %>%
-    kbl(caption = "Most Stable Questions", digits = 3) %>%
-    kable_styling(
-      bootstrap_options = c("striped","hover","condensed"),
-      full_width = FALSE)
+    kbl(digits = 3) %>%
+    kable_styling(bootstrap_options = c("striped","hover","condensed"),
+                  full_width = FALSE, position = "left")
 } else {
-  cat("Stability analysis is only available for two-round elicitation exercises.")
+  knitr::asis_output("This diagnostic is only available when multiple elicitation rounds are analyzed.")
 }
-
 ```
 
 # Assessment Confidence Weighting Effects
 
 ```{r}
-
 acw_tbl <- report_data$summary %>%
   select(Question,Round, EqW_Mean, ACW_Mean, ACW_Effect ) %>%
   arrange(desc(abs(ACW_Effect)))
-
 acw_tbl %>%
-  kbl(caption = "Assessment Confidence Weighting Effects",digits = 3) %>%
-  kable_styling(
-    bootstrap_options = c("striped", "hover", "condensed"),
-    full_width = FALSE
-  )
-
+  kbl(digits = 3) %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"),
+                full_width = FALSE, position = "left")
 ```
 
 # Assessment Confidence Summary
@@ -164,12 +168,11 @@ acw_tbl %>%
 The table below summarizes participant assessment confidence for each question.
 
 ```{r}
-
 report_data$summary %>%
   select(Question, Round, Mean_AC, Min_AC, Max_AC) %>%
-  kbl(caption = "Assessment Confidence Summary", digits = 1) %>%
+  kbl(digits = 3) %>%
   kable_styling(bootstrap_options = c("striped","hover","condensed"),
-                full_width = FALSE)
+                full_width = FALSE, position = "left")
 ```
 
 # Assessment Confidence Change
@@ -177,18 +180,15 @@ report_data$summary %>%
 The table below summarizes changes in mean assessment confidence between rounds.
 
 ```{r}
-
 if(!is.null(report_data$ac_change)){
   report_data$ac_change %>%
     select(Question, `1`, `2`, AC_Change) %>%
-    kbl(caption = "Assessment Confidence Change", digits = 1) %>%
-    kable_styling(
-      bootstrap_options = c("striped","hover","condensed"),
-      full_width = FALSE)
+    kbl(digits = 3) %>%
+    kable_styling(bootstrap_options = c("striped","hover","condensed"),
+                  full_width = FALSE, position = "left")
 } else {
-  cat("Assessment confidence change is only available for two-round elicitation exercises.")
+  knitr::asis_output("This diagnostic is only available when multiple elicitation rounds are analyzed.")
 }
-
 ```
 
 # Divergent Judgement
@@ -196,25 +196,19 @@ if(!is.null(report_data$ac_change)){
 The table below ranks questions according to the spread of the Equal-Weight pooled distribution.
 
 ```{r}
-
-report_data$divergence %>%
-  select(Question, Round, EqW_5th, EqW_95th, Divergence) %>%
-  kbl(caption = "Divergence in Expert Judgement", digits = 3) %>%
-  kable_styling(
-    bootstrap_options = c("striped","hover","condensed"),
-    full_width = FALSE
-  )
-
+report_data$spread %>%
+  select(Question, Round, EqW_5th, EqW_95th, Spread) %>%
+  kbl(digits = 3) %>%
+  kable_styling(bootstrap_options = c("striped","hover","condensed"),
+                full_width = FALSE, position = "left")
 ```
 
-# Greatest Divergence in Expert Judgement
+# Greatest Spread in Expert Judgement
 
 ```{r}
-
-top_div <- report_data$divergence %>%
+top_div <- report_data$spread %>%
   slice(1)
-
-build_divergence_plot(report_data)
+build_spread_plot(report_data)
 
 ```
 
@@ -225,16 +219,12 @@ of revision following discussion and assessment confidence metrics.
 The table below summarizes participant retention for each question.
 
 ```{r}
-
 if(!is.null(report_data$participation_change)){
   report_data$participation_change %>%
     select(Question, `1`, `2`,Participation_Retention) %>%
-    kbl(caption = "Participation Retention", digits = 1) %>%
-    kable_styling(
-      bootstrap_options = c("striped", "hover","condensed"),
-      full_width = FALSE)
-} else {
-  cat(
-    "Participation retention analysis is only available for two-round elicitation exercises."
-  )
+    kbl(digits = 3) %>%
+    kable_styling(bootstrap_options = c("striped", "hover","condensed"),
+                  full_width = FALSE, position = "left")
+  } else {
+    knitr::asis_output("This diagnostic is only available when multiple elicitation rounds are analyzed.")
 }

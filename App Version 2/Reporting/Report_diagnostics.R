@@ -8,7 +8,7 @@ calculate_stability <- function(data) {
   NULL
 }
 
-calculate_divergence <- function(data) {
+calculate_spread <- function(data) {
   NULL
 }
 
@@ -90,10 +90,10 @@ calculate_stability_summary <- function(summary_tbl){
     arrange(Abs_Revision)
 }
 
-calculate_divergence_summary <- function(summary_tbl){
+calculate_spread_summary <- function(summary_tbl){
   summary_tbl %>%
-    mutate(Divergence = EqW_95th - EqW_5th) %>%
-    arrange(desc(Divergence))
+    mutate(Spread = EqW_95th - EqW_5th) %>%
+    arrange(desc(Spread))
 }
 
 calculate_participation_summary <- function(summary_tbl){

@@ -53,14 +53,14 @@ generate_executive_summary <- function(report_data){
     "%. "
   )
   
-  # Divergence
-  if(!is.null(report_data$divergence)){
+  # Spread
+  if(!is.null(report_data$spread)){
     
-    top_div <- report_data$divergence %>%
+    top_div <- report_data$spread %>%
       slice(1)
     summary_text <- paste0(
       summary_text,
-      "The greatest divergence in expert judgement occurred for Question ",
+      "The greatest spread in expert judgement occurred for Question ",
       top_div$Question,
       ". "
     )
@@ -131,10 +131,19 @@ generate_low_confidence_narrative <- function(report_data){
 }
 
 generate_acw_effect_narrative <- function(report_data){
+  
   top_acw <- report_data$summary %>%
     filter(!is.na(ACW_Effect)) %>%
-    arrange(desc(abs(ACW_Effect))) %>%
-    slice(1)
+    arrange(desc(abs(ACW_Effect)))
+  
+  if(nrow(top_acw) == 0){
+    return(
+      "Assessment confidence weighting effects were not available for this analysis."
+    )
+  }
+  
+  top_acw <- top_acw[1, ]
+  
   paste0(
     "The largest influence of assessment confidence weighting occurred for Question ",
     top_acw$Question,
@@ -144,6 +153,7 @@ generate_acw_effect_narrative <- function(report_data){
     round(top_acw$ACW_Effect, 3),
     "."
   )
+  
 }
 
 generate_ac_change_narrative <- function(report_data){
@@ -191,16 +201,24 @@ generate_stability_narrative <- function(report_data){
   )
 }
 
-generate_divergence_narrative <- function(report_data){
-  top_div <- report_data$divergence %>%
+generate_spread_narrative <- function(report_data){
+  
+  if(is.null(report_data$spread)){
+    return(
+      "Distribution spread analysis was not available for this analysis."
+    )
+  }
+  
+  top_div <- report_data$spread %>%
     slice(1)
+  
   paste0(
-    "The greatest divergence in expert judgement occurred for Question ",
+    "The greatest spread in expert judgement occurred for Question ",
     top_div$Question,
     " (Round ",
     top_div$Round,
     "), where the Equal-Weight 90% interval spanned ",
-    round(top_div$Divergence, 3),
+    round(top_div$Spread, 3),
     "."
   )
 }
@@ -245,18 +263,21 @@ generate_executive_summary <- function(report_data){
     "%. "
   )
   
-  if(!is.null(report_data$divergence)){
-    top_div <- report_data$divergence %>%
+  if(!is.null(report_data$spread)){
+    top_div <- report_data$spread %>%
       slice(1)
     summary_text <- paste0(
       summary_text,
-      "The greatest divergence in expert judgement occurred for Question ",
+      "The greatest spread in expert judgement occurred for Question ",
       top_div$Question,
       "."
     )
   }
   summary_text
 }
+
+
+
 
 generate_warnings <- function(report_data){
   warnings <- c()
@@ -268,31 +289,31 @@ generate_warnings <- function(report_data){
   low_conf <- report_data$summary %>%
     filter(Mean_AC == min(Mean_AC, na.rm = TRUE)) %>%
     slice(1)
-  if(low_conf$Mean_AC < 50){
+  if(low_conf$Mean_AC[1] < 50){
     warnings <- c(warnings, paste0(
         "Question ",
         low_conf$Question,
         " had the lowest average assessment confidence (",
         round(low_conf$Mean_AC, 1),
         "%)."))}
-  
+
   # --------------------------------------------------
-  # High divergence
+  # High spread
   # --------------------------------------------------
   
-  if(!is.null(report_data$divergence)){
-    top_div <- report_data$divergence %>%
+  if(!is.null(report_data$spread)){
+    top_div <- report_data$spread %>%
       slice(1)
-    if(top_div$Divergence > 0.20){
+    if(top_div$Spread > 0.20){
       warnings <- c(warnings, paste0(
           "Question ",
           top_div$Question,
-          " exhibited substantial divergence in expert judgement (90% interval width = ",
-          round(top_div$Divergence, 3),
+          " exhibited substantial spread in expert judgement (90% interval width = ",
+          round(top_div$Spread, 3),
           ")."))
     }
   }
-  
+
   # --------------------------------------------------
   # Low participation retention
   # --------------------------------------------------
@@ -300,7 +321,7 @@ generate_warnings <- function(report_data){
   if(!is.null(report_data$participation_change)){
     low_part <- report_data$participation_change %>%
       slice(1)
-    if(low_part$Participation_Retention < 80){
+    if(low_part$Participation_Retention[1] < 80){
       warnings <- c(warnings, paste0(
           "Question ",
           low_part$Question,
@@ -309,27 +330,37 @@ generate_warnings <- function(report_data){
           "%)."))
     }
   }
-  
+
   # --------------------------------------------------
   # Large AC weighting effect
   # --------------------------------------------------
   
   top_acw <- report_data$summary %>%
     filter(!is.na(ACW_Effect)) %>%
-    arrange(desc(abs(ACW_Effect))) %>%
-    slice(1)
+    arrange(desc(abs(ACW_Effect)))
   
   if(nrow(top_acw) > 0){
-    if(abs(top_acw$ACW_Effect) > 0.01){
-      warnings <- c(warnings, paste0(
+    
+    top_acw <- top_acw %>%
+      slice(1)
+    
+    if(abs(top_acw$ACW_Effect[1]) > 0.01){
+      
+      warnings <- c(
+        warnings,
+        paste0(
           "Question ",
-          top_acw$Question,
+          top_acw$Question[1],
           " exhibited a notable assessment confidence weighting effect (",
-          round(top_acw$ACW_Effect, 3),
-          ")."))
+          round(top_acw$ACW_Effect[1], 3),
+          ")."
+        )
+      )
+      
     }
+    
   }
-  
+
   # --------------------------------------------------
   # Large revision following discussion
   # --------------------------------------------------
@@ -337,7 +368,7 @@ generate_warnings <- function(report_data){
   if(!is.null(report_data$revision)){
     top_rev <- report_data$revision %>%
       slice(1)
-    if(abs(top_rev$Revision) > 0.05){
+    if(abs(top_rev$Revision[1]) > 0.05){
       warnings <- c(warnings, paste0(
           "Question ",
           top_rev$Question,
@@ -346,7 +377,6 @@ generate_warnings <- function(report_data){
           ")."))
     }
   }
-  
   # --------------------------------------------------
   # No warnings detected
   # --------------------------------------------------
