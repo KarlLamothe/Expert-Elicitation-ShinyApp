@@ -131,7 +131,7 @@ Expert-Elicitation-ShinyApp/
 | Version | Description | Status |
 |---------|-------------|--------|
 | Version 1 | Original expert elicitation framework using equal-weight aggregation | Archived |
-| Version 2 | Expert elicitation framework incorporating assessment confidence and optional multi-round elicitation | Active development |
+| Version 2 | Expert elicitation framework incorporating assessment confidence, optional multi-round elicitation, and facilitator reporting | Active development |
 
 ## Running the Application
 
