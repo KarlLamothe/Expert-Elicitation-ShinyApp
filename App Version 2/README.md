@@ -206,7 +206,7 @@ In this situation:
 - assessment confidence-weighted summaries are reported as unavailable; and
 - the application displays a warning identifying the affected question and elicitation round.
 
-## Missing Assessment Confidence
+### Missing Assessment Confidence
 
 Assessment confidence values are constrained to the range from 0 to 100.
 
@@ -338,7 +338,7 @@ See the Google-Sheets-Setup.md for instructions covering:
 - dynamically linking spreadsheets using `IMPORTRANGE()`; and
 - recommended access and privacy practices.
 
-## Input Data
+### Input Data
 
 The application is designed around input data containing one row for each expert response to a question within an elicitation round.
 
@@ -368,7 +368,7 @@ The column-mapping controls within the application allow equivalent columns with
 
 The Round column is optional. If no Round column is selected, the data are analyzed using the single-round workflow.
 
-## Input Data Validation
+### Input Data Validation
 
 Before an analysis is run, Version 2 checks the submitted response data for common input problems.
 
@@ -423,7 +423,7 @@ Version 2 includes an automated Facilitator Report that summarizes elicitation r
 
 The report is generated directly from the application and can be downloaded as an HTML document.
 
-# Report Contents:
+## Report Contents:
 
 The Facilitator Report currently includes:
 
@@ -490,7 +490,6 @@ The `Functions and Helpers` directory contains supporting functions for processi
 The `Data` directory contains demonstration data that can be used to explore both the assessment confidence and multi-round functionality without using responses from an active elicitation exercise.
 
 The `Reporting` directory contains the functions used to generate automated facilitator reports, including report data preparation, diagnostics, narrative generation, visualizations, and report export.
-
 
 ## Running Version 2
 
