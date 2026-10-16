@@ -74,7 +74,7 @@ The application provides Question × Round visualizations and summarizes changes
 
 Multi-round analysis is optional. Version 2 continues to support single-round datasets.
 
-## Facilitator Reporting
+### Facilitator Reporting
 
 Version 2 includes an automated reporting framework designed to assist facilitators with interpretation of elicitation outcomes.
 
