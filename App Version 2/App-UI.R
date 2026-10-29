@@ -7,8 +7,8 @@ card_box <- function(...) {
       border-right: 1px solid #dee2e6;
       border-bottom: 1px solid #dee2e6;
       border-radius: 8px;
-      padding: 15px;
-      margin-bottom: 15px;
+      padding: 12px;
+      margin-bottom: 10px;
       box-shadow: 0 1px 3px rgba(0,0,0,0.08); ",
     ...
   )
@@ -17,6 +17,10 @@ card_box <- function(...) {
 # User interface
 ############################################################################
 ui <- fluidPage(
+  tags$head(tags$style(HTML("
+  .nav-link.active {
+  font-weight: 700 !important;
+  font-size: 1.05em;}"))),
   theme = bs_theme(version = 5, bootswatch = "flatly", primary = "#1F5A7A",
                    secondary = "#6C757D", success = "#4C956C"),
   titlePanel("Expert Elicitation Application"),
