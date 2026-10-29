@@ -5,152 +5,88 @@ ui <- fluidPage(
   theme = bs_theme(version = 5, bootswatch = "flatly", primary = "#1F5A7A",
                    secondary = "#6C757D", success = "#4C956C"),
   titlePanel("Expert Elicitation Application"),
-  sidebarLayout(
-    sidebarPanel(
+  sidebarLayout(sidebarPanel(
+    conditionalPanel(condition = "input.main_tab == 'Expert Estimates'", 
       h4("Data"),
-      
-      radioButtons(
-        "data_source",
-        "Data source",
-        choices = c(
-          "Demo data" = "demo",
-          "Upload CSV" = "csv",
-          "Google Sheets" = "google"
-        ),
-        selected = "demo"
-      ),
-      
-      conditionalPanel(
-        condition = "input.data_source == 'csv'",
-        
-        fileInput(
-          "csv_file",
-          "Upload Expert Responses",
-          accept = c(".csv", "text/csv")
-        ),
-        
-        downloadButton(
-          "download_template",
-          "Download Response Template",
-          class = "btn-default btn-sm"
-        )
-      ),
-      
-      conditionalPanel(
-        condition = "input.data_source == 'google'",
-        
-        actionButton(
-          "refresh_sheet",
-          "Get Latest Expert Responses",
-          class = "btn-success"
-        )
-      ),
-      
+      radioButtons("data_source", "Data source",
+                   choices = c("Demo data" = "demo",
+                               "Upload CSV" = "csv",
+                               "Google Sheets" = "google"), selected = "demo"),
+      conditionalPanel(condition = "input.data_source == 'csv'",
+                       fileInput("csv_file",
+                                 "Upload Expert Responses",
+                                 accept = c(".csv", "text/csv")),
+                       downloadButton("download_template",
+                                      "Download Response Template",
+                                      class = "btn-default btn-sm")),
+      conditionalPanel(condition = "input.data_source == 'google'",
+                       actionButton("refresh_sheet",
+                                    "Get Latest Expert Responses",
+                                    class = "btn-success")),
       br(),
-      br(),
-      
+      br()),
       # ============================================================
       # QUESTIONS
       # ============================================================
       h4("Questions"),
       uiOutput("question_filter_ui"),
       tags$hr(),
-      
       # ============================================================
       # ANALYSIS OPTIONS
       # ============================================================
-      tags$details(
-        tags$summary(
+      tags$details(tags$summary(
           style = "cursor: pointer; font-weight: 600; font-size: 18px;",
-          "Analysis Options"
-        ),
-        
-        br(),
-        
-        checkboxInput(
-          "show_individual",
-          "Show individual expert curves",
-          TRUE
-        ),
-        
-        checkboxInput(
-          "show_AC_mix",
-          "Show assessment confidence-weighted mixture",
-          TRUE
-        ),
-        
-        checkboxInput(
-          "show_beta",
-          "Show Beta approximation",
-          FALSE
-        ),
-        
-        tags$details(
-          tags$summary(
-            style = "cursor: pointer; font-weight: 600;",
-            "Advanced analysis settings"
-          ),
-          
+          "Analysis Options"),
           br(),
-          
-          numericInput(
-            "lambda",
-            "PERT shape (lambda)",
-            value = 4,
-            min = 1,
-            step = 1
-          ),
-          
-          numericInput(
-            "Nsim",
-            "Mixture draws",
-            value = 10000,
-            min = 1000,
-            step = 1000
-          )
-        )
-      ),
+          checkboxInput("show_individual",
+                        "Show individual expert curves", TRUE),
+          checkboxInput("show_AC_mix",
+                        "Show assessment confidence-weighted mixture", TRUE),
+          checkboxInput("show_beta", "Show Beta approximation", FALSE),
+          tags$details(tags$summary(
+            style = "cursor: pointer; font-weight: 600;",
+            "Advanced analysis settings"),
+          br(),
+          numericInput("lambda", "PERT shape (lambda)",
+                       value = 4, min = 1, step = 1),
+          numericInput("Nsim", "Mixture draws",
+                       value = 10000, min = 1000, step = 1000))),
+    br(),
+    actionButton("run", "Run / Refresh Analysis",
+                 class = "btn-primary", width = "100%"),
+    tags$hr(),
       
+    # ============================================================
+    # ADVANCED COLUMN MAPPING
+    # ============================================================
+    conditionalPanel(condition = "input.main_tab == 'Expert Estimates'",
+    tags$details(tags$summary(
+      style = "cursor: pointer; font-weight: 600; font-size: 18px;",
+      "Column Mapping"),
       br(),
-      
-      actionButton(
-        "run",
-        "Run / Refresh Analysis",
-        class = "btn-primary",
-        width = "100%"
-      ),
-      
-      tags$hr(),
-      
-      # ============================================================
-      # ADVANCED COLUMN MAPPING
-      # ============================================================
-      tags$details(
-        tags$summary(style = "cursor: pointer; font-weight: 600; font-size: 18px;",
-                     "Column Mapping"),
+      helpText(
+        "Change these settings only if the input data columns are not detected correctly."),
+      uiOutput("colmap_ui")),
+    tags$hr()),
+    # ============================================================
+    # DOWNLOADS
+    # ============================================================
+    tags$details(tags$summary(
+      style = "cursor: pointer; font-weight: 600; font-size: 18px;", "Downloads"),
+      tags$strong("Individual plots"),
+      br(),
+      fluidRow(column(6,downloadButton("download_participants_png",
+                                       "Scores",
+                                       class = "btn-default btn-sm",
+                                       width = "100%")),
+               column(6, downloadButton("download_density_png",
+                                        "Distributions",
+                                        class = "btn-default btn-sm",
+                                        width = "100%"))),
         br(),
-        helpText(
-          "Change these settings only if the input data columns are not detected correctly."),
-        uiOutput("colmap_ui")),
-      tags$hr(),
-
-      # ============================================================
-      # DOWNLOADS
-      # ============================================================
-      tags$details(tags$summary(style = "cursor: pointer; font-weight: 600; font-size: 18px;",
-                                "Downloads"),
-        tags$strong("Individual plots"),
-        br(),
-        fluidRow(column(6,downloadButton("download_participants_png",
-                                         "Scores",class = "btn-default btn-sm",
-                                         width = "100%")),
-                 column(6, downloadButton("download_density_png",
-                                          "Distributions",
+        fluidRow(column(6,downloadButton("download_hist_png","Histograms",
                                           class = "btn-default btn-sm",
-                                          width = "100%"))),
-        br(),
-        fluidRow(column( 6,downloadButton( "download_hist_png","Histograms",
-                                           class = "btn-default btn-sm",width = "100%")),
+                                         width = "100%")),
                  column(6, downloadButton("download_cdf_png","CDFs",
                                           class = "btn-default btn-sm",
                                           width = "100%"))),
@@ -164,7 +100,7 @@ ui <- fluidPage(
         downloadButton("download_report_html", "Facilitator Report (HTML)",
                        class = "btn-default btn-sm"))),
     mainPanel(
-      tabsetPanel(
+      tabsetPanel(id = "main_tab",
         tabPanel("Expert Estimates",
           br(),
           h3("Individual Expert Estimates"),
@@ -208,79 +144,48 @@ ui <- fluidPage(
           h4("Round Comparison"),
           
           helpText(
-            "Changes in pooled estimates and assessment confidence between Round 1 and Round 2."
-          ),
+            "Changes in pooled estimates and assessment confidence between Round 1 and Round 2."),
           
           tableOutput("round_comparison_table"),
           
           tags$hr(),
           tags$details(
-            tags$summary(
-              style = "
-      cursor: pointer;
-      font-weight: 600;
-      font-size: 20px;
-    ",
-              "Detailed Results"
-            ),
+            tags$summary(style = "cursor: pointer;
+                                  font-weight: 600;
+                                  font-size: 20px;",
+                         "Detailed Results" ),
             br(),
-            
-            div(
-              style = "font-size: 15px;",
-              tableOutput("summary_table")
-            )
-          ),
-          
+            div(style = "font-size: 15px;", tableOutput("summary_table"))),
           tags$hr(),
           
           h4("Definitions"),
-          
-          tags$ul(
-            tags$li(
-              tags$b("Equal-weight mean: "),
-              "Pooled estimate when all experts contribute equally."
-            ),
-            
-            tags$li(
-              tags$b("Assessment confidence: "),
-              paste(
+          tags$ul(tags$li(
+            tags$b("Equal-weight mean: "),
+            "Pooled estimate when all experts contribute equally."),
+            tags$li(tags$b("Assessment confidence: "),
+                    paste(
                 "A participant's self-reported confidence in the probability assessment",
                 "provided for a question, considering the available evidence, relevant",
                 "expertise, assumptions, and remaining uncertainty. Assessment confidence",
                 "is separate from the uncertainty represented by the lowest and highest",
-                "plausible probabilities."
-              )
-            ),
+                "plausible probabilities.")),
             
-            tags$li(
-              tags$b("Confidence-weighted mean: "),
+            tags$li(tags$b("Confidence-weighted mean: "),
               paste(
                 "The pooled estimate obtained when participants' relative contributions",
-                "are weighted according to their reported assessment confidence."
-              )
-            ),
+                "are weighted according to their reported assessment confidence.")),
             
-            tags$li(
-              tags$b("Average assessment confidence: "),
-              "Mean assessment confidence reported by participating experts."
-            ),
+            tags$li(tags$b("Average assessment confidence: "),
+              "Mean assessment confidence reported by participating experts."),
             
-            tags$li(
-              tags$b("Δ Equal-weight mean: "),
-              "Round 2 minus Round 1 equal-weight pooled mean."
-            ),
+            tags$li(tags$b("Δ Equal-weight mean: "),
+              "Round 2 minus Round 1 equal-weight pooled mean."),
             
-            tags$li(
-              tags$b("Δ Confidence-weighted mean: "),
-              "Round 2 minus Round 1 assessment confidence-weighted pooled mean."
-            ),
+            tags$li(tags$b("Δ Confidence-weighted mean: "),
+              "Round 2 minus Round 1 assessment confidence-weighted pooled mean."),
             
-            tags$li(
-              tags$b("Δ Assessment confidence: "),
-              "Round 2 minus Round 1 average assessment confidence."
-            )
-          )
-          )
+            tags$li(tags$b("Δ Assessment confidence: "),
+              "Round 2 minus Round 1 average assessment confidence.")))
       )
     )
   )
