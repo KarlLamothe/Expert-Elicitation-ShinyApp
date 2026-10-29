@@ -1,3 +1,18 @@
+# Card helper
+card_box <- function(...) {
+  div(style = "
+      background: white;
+      border-top: 4px solid #1F5A7A;
+      border-left: 1px solid #dee2e6;
+      border-right: 1px solid #dee2e6;
+      border-bottom: 1px solid #dee2e6;
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 15px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08); ",
+    ...
+  )
+}
 ############################################################################# 
 # User interface
 ############################################################################
@@ -6,37 +21,37 @@ ui <- fluidPage(
                    secondary = "#6C757D", success = "#4C956C"),
   titlePanel("Expert Elicitation Application"),
   sidebarLayout(sidebarPanel(width=3,
-    conditionalPanel(condition = "input.main_tab == 'Expert Estimates'", 
-      h4("Data"),
-      radioButtons("data_source", "Data source",
-                   choices = c("Demo data" = "demo",
-                               "Upload CSV" = "csv",
-                               "Google Sheets" = "google"), selected = "demo"),
-      conditionalPanel(condition = "input.data_source == 'csv'",
-                       fileInput("csv_file",
-                                 "Upload Expert Responses",
-                                 accept = c(".csv", "text/csv")),
-                       downloadButton("download_template",
-                                      "Download Response Template",
-                                      class = "btn-default btn-sm")),
-      conditionalPanel(condition = "input.data_source == 'google'",
-                       actionButton("refresh_sheet",
-                                    "Get Latest Expert Responses",
-                                    class = "btn-success"))),
+    conditionalPanel(
+      condition = "input.main_tab == 'Expert Estimates'", 
+      card_box(h4(icon("database"),"Data"),
+               radioButtons("data_source", "Data source",
+                            choices = c("Demo data" = "demo",
+                                        "Upload CSV" = "csv",
+                                        "Google Sheets" = "google"), 
+                            selected = "demo"),
+               conditionalPanel(condition = "input.data_source == 'csv'",
+                                fileInput("csv_file", "Upload Expert Responses",
+                                          accept = c(".csv", "text/csv")),
+                                downloadButton("download_template",
+                                               "Download Response Template",
+                                               class = "btn-default btn-sm")),
+               conditionalPanel(condition = "input.data_source == 'google'",
+                                actionButton("refresh_sheet",
+                                             "Get Latest Expert Responses",
+                                             class = "btn-success")))),
     # ============================================================
     # QUESTIONS
     # ============================================================
-    h4("Questions"),
+    card_box(h4(icon("list-check"), "Questions"),
     uiOutput("question_filter_ui"),
-    uiOutput("round_filter_ui"),
-    tags$hr(),
+    uiOutput("round_filter_ui")),
     
     # ============================================================
     # ANALYSIS OPTIONS
     # ============================================================
-      tags$details(tags$summary(
+    card_box(tags$details(tags$summary(
           style = "cursor: pointer; font-weight: 600; font-size: 18px;",
-          "Analysis Options"),
+          icon("sliders"), "Analysis Options"),
           br(),
           checkboxInput("show_individual",
                         "Show individual expert curves", TRUE),
@@ -50,29 +65,29 @@ ui <- fluidPage(
           numericInput("lambda", "PERT shape (lambda)",
                        value = 4, min = 1, step = 1),
           numericInput("Nsim", "Mixture draws",
-                       value = 10000, min = 1000, step = 1000))),
-    br(),
-    actionButton("run", "Run / Refresh Analysis",
-                 class = "btn-primary", width = "100%"),
-    tags$hr(),
-      
+                       value = 10000, min = 1000, step = 1000)))),
+    
+    actionButton("run", icon = icon("play"), "Run / Refresh Analysis",
+                 class = "btn-primary btn-lg", width = "100%"),
+    br(),  
+    br(),  
+    
     # ============================================================
     # ADVANCED COLUMN MAPPING
     # ============================================================
     conditionalPanel(condition = "input.main_tab == 'Expert Estimates'",
-    tags$details(tags$summary(
+                     card_box(tags$details(tags$summary(
       style = "cursor: pointer; font-weight: 600; font-size: 18px;",
-      "Column Mapping"),
+      icon("gear"),"Column Mapping"),
       br(),
       helpText(
         "Change these settings only if the input data columns are not detected correctly."),
-      uiOutput("colmap_ui")),
-    tags$hr()),
+      uiOutput("colmap_ui")))),
     # ============================================================
     # DOWNLOADS
     # ============================================================
-    tags$details(tags$summary(
-      style = "cursor: pointer; font-weight: 600; font-size: 18px;", "Downloads"),
+    card_box(tags$details(tags$summary(
+      style = "cursor: pointer; font-weight: 600; font-size: 18px;", icon("download"),"Downloads"),
       tags$strong("Individual plots"),
       br(),
       fluidRow(column(6,downloadButton("download_participants_png",
@@ -98,9 +113,10 @@ ui <- fluidPage(
         downloadButton("download_all_plots_zip", "Analysis Outputs (ZIP)",
                        class = "btn-default btn-sm"),
         downloadButton("download_report_html", "Facilitator Report (HTML)",
-                       class = "btn-default btn-sm"))),
+                       class = "btn-default btn-sm")))),
+    
     mainPanel(width=9,
-      tabsetPanel(id = "main_tab",
+      tabsetPanel(id = "main_tab",type="pills",
         tabPanel("Expert Estimates",
           br(),
           h3("Individual Expert Estimates"),
