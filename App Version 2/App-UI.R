@@ -27,7 +27,7 @@ ui <- fluidPage(
   sidebarLayout(sidebarPanel(width=3,
     conditionalPanel(
       condition = "input.main_tab == 'Expert Estimates'", 
-      card_box(h4(icon("database"),"Data"),
+      card_box(h5(icon("database"),strong("Data")),
                radioButtons("data_source", "Data source",
                             choices = c("Demo data" = "demo",
                                         "Upload CSV" = "csv",
@@ -46,7 +46,7 @@ ui <- fluidPage(
     # ============================================================
     # QUESTIONS
     # ============================================================
-    card_box(h4(icon("list-check"), "Questions"),
+    card_box(h5(icon("list-check"), strong("Questions")),
     uiOutput("question_filter_ui"),
     uiOutput("round_filter_ui")),
     
