@@ -3,10 +3,20 @@
 ###########################################################################
 server <- function(input, output, session) {
   
+  ###########################################################################
+  # DATA SOURCES AND DATA INGESTION
+  # Supports three data sources:
+  #   - Built-in demo dataset
+  #   - User-uploaded CSV files
+  #   - Google Sheets facilitator worksheet
+  ###########################################################################
   sheet_data <- reactiveVal(NULL)
   last_refresh <- reactiveVal(NULL)
   n_participants <- reactiveVal(NULL)
   
+  ###########################################################################
+  # GOOGLE SHEETS RETRIEVAL
+  ###########################################################################
   observeEvent(input$refresh_sheet, {
     tryCatch({
       dat <- read_sheet(sheet_url, sheet = "Facilitator")
@@ -19,6 +29,10 @@ server <- function(input, output, session) {
         type = "error",duration = NULL)
     })
   })
+  
+  ###########################################################################
+  # RESPONSE TEMPLATE DOWNLOAD
+  ###########################################################################
   output$download_template <- downloadHandler(
     filename = function() {
       "expert_elicitation_response_template.csv"
@@ -37,6 +51,11 @@ server <- function(input, output, session) {
     contentType = "text/csv"
   )
   
+  ###########################################################################
+  # DATA STATUS INDICATOR
+  # Displays whether expert responses have been loaded and, when available, 
+  # reports the number of unique participants and the most recent refresh time.
+  ###########################################################################
   output$refresh_status <- renderUI({
     if (is.null(last_refresh())) {
       div(style = "
@@ -60,31 +79,31 @@ server <- function(input, output, session) {
         n_exp <- dplyr::n_distinct(
           sheet_data()[[input$col_id]],
           na.rm = TRUE)}
-      div(
-        style = "
+      div(style = "
         background-color: #eef7f1;
         border-left: 4px solid #3c8c5a;
         padding: 12px;
         border-radius: 6px;
         margin-bottom: 10px;
       ",
-        tags$div(
-          style = "font-weight: 600; color: #267044;",
+        tags$div(style = "font-weight: 600; color: #267044;",
           "● Expert responses loaded"),
         if (!is.null(n_exp)) {
-          tags$div(
-            style = "margin-top: 5px;",
-            paste(n_exp, "experts"))
+          tags$div(style = "margin-top: 5px;",
+                   paste(n_exp, "experts"))
           },
-        tags$div(
-          style = "font-size: 12px; color: #666666; margin-top: 3px;",
-          paste("Updated",format(last_refresh(), "%I:%M:%S %p"))
+        tags$div(style = "font-size: 12px; color: #666666; margin-top: 3px;",
+                 paste("Updated",format(last_refresh(), "%I:%M:%S %p"))
         )
       )
     }
   })
   
-  # Load data from the selected source
+  ###########################################################################
+  # ACTIVE DATA SOURCE
+  # Returns the currently selected dataset regardless of source
+  # All downstream analyses use this reactive object.
+  ###########################################################################
   raw_df <- reactive({
     req(input$data_source)
     #Demo data
@@ -105,7 +124,11 @@ server <- function(input, output, session) {
     NULL
   })
   
-  # Column mapping UI
+  ###########################################################################
+  # INPUT COLUMN MAPPING
+  # Automatically detects likely question, participant ID, elicitation,
+  # confidence, and round columns while allowing manual override.
+  ###########################################################################
   output$colmap_ui <- renderUI({
     req(raw_df())
     df <- raw_df()
@@ -143,7 +166,11 @@ server <- function(input, output, session) {
     )
   })
   
-  # Multi-question filter UI (select many or "All")
+  ###########################################################################
+  # QUESTION SELECTION
+  # Generates the question filter based on the detected question column.
+  # Multiple questions may be selected simultaneously.
+  ###########################################################################
   output$question_filter_ui <- renderUI({
     req(raw_df(), input$col_question)
     if (identical(input$col_question, "<none>")) return(NULL)
@@ -153,7 +180,18 @@ server <- function(input, output, session) {
                 choices = c("All", qs), selected = "All", multiple = TRUE)
   })
   
-  # Run/Refresh
+  ###########################################################################
+  # ANALYSIS ENGINE
+  # Triggered when the user runs the analysis.
+  # Workflow:
+  #   1. Retrieve and validate input data
+  #   2. Apply question filters
+  #   3. Detect single-round or multi-round structure
+  #   4. Generate PERT distributions
+  #   5. Calculate pooled summaries
+  #   6. Evaluate confidence-weighted pooling feasibility
+  #   7. Assemble outputs for plotting, reporting, and export
+  ###########################################################################
   results <- eventReactive(input$run, {
     df <- raw_df()
     req(input$col_id, input$col_lpp, input$col_bgp, input$col_hpp)
@@ -168,7 +206,6 @@ server <- function(input, output, session) {
     # -------------------------------------------------------------------------
     # Validate input data before analysis
     # -------------------------------------------------------------------------
-    
     AC_col_val <- if (
       !is.null(input$col_AC) &&
       !identical(input$col_AC, "<none>")) {
@@ -200,28 +237,12 @@ server <- function(input, output, session) {
       showModal(
         modalDialog(
           title = "Input Data Validation Failed",
-          
-          tags$p(
-            "The analysis was not run because problems were detected in the input data."
-          ),
-          
-          tags$p(
-            "Please correct the following issue(s) and run the analysis again:"
-          ),
-          
-          tags$ul(
-            lapply(
-              validation$problems,
-              function(problem) {
-                tags$li(problem)
-              }
-            )
-          ),
-          footer = modalButton("Close"),
-          easyClose = TRUE,
-          size = "l"
-        )
-      )
+          tags$p("The analysis was not run because problems were detected in the input data."),
+          tags$p("Please correct the following issue(s) and run the analysis again:"),
+          tags$ul(lapply(
+            validation$problems, function(problem) {
+                tags$li(problem)})),
+          footer = modalButton("Close"), easyClose = TRUE, size = "l"))
       return(NULL)
     }
     
@@ -829,27 +850,23 @@ server <- function(input, output, session) {
            height = max(4.5, 3.0 * n_rows))}
   }
   
+  ###############################################################################
+  # EXPORTS
+  ###############################################################################
   output$download_participants_png <- downloadHandler(
-    
     filename = function() {
       paste0("expert_estimates_", format(Sys.time(), "%Y%m%d_%H%M"), ".png")
     },
-    
     content = function(file) {
-      
       req(results())
-      
       r <- results()
       dims <- export_dimensions(r)
-      
-      g <- build_individuals_plot(
-        df_raw = raw_df(),
-        id_col = input$col_id,
-        lpp_col = input$col_lpp,
-        bgp_col = input$col_bgp,
-        hpp_col = input$col_hpp,
-        question_col = input$col_question,
-        
+      g <- build_individuals_plot(df_raw = raw_df(),
+                                  id_col = input$col_id,
+                                  lpp_col = input$col_lpp,
+                                  bgp_col = input$col_bgp,
+                                  hpp_col = input$col_hpp,
+                                  question_col = input$col_question,
         round_col = if (
           !is.null(input$col_round) &&
           !identical(input$col_round, "<none>")
@@ -858,154 +875,94 @@ server <- function(input, output, session) {
         } else {
           NULL
         },
-        
         selected_questions = input$question_multi,
         use_export_theme = TRUE,
         theme_export = theme_export,
-        facet_cols = dims$facet_cols
-      )
+        facet_cols = dims$facet_cols)
       
-      ggsave(
-        filename = file,
-        plot = g,
-        width = dims$width,
-        height = dims$height,
-        dpi = 600,
-        units = "in",
-        bg = "white",
-        limitsize = FALSE
-      )
+      ggsave(filename = file, plot = g, width = dims$width, height = dims$height,
+             dpi = 600,units = "in",  bg = "white", limitsize = FALSE)
     }
   )
   
   output$download_density_png <- downloadHandler(
-    
     filename = function() {
       paste0("density_", format(Sys.time(), "%Y%m%d_%H%M"), ".png")
     },
-    
     content = function(file) {
-      
       req(results())
-      
       r <- results()
       dims <- export_dimensions(r)
-      
-      g <- build_density_plot(
-        r,
+      g <- build_density_plot(r,
         show_individual = isTRUE(input$show_individual),
         show_beta = isTRUE(input$show_beta),
         show_AC_mix = isTRUE(input$show_AC_mix),
-        facet_cols = dims$facet_cols
-      )
+        facet_cols = dims$facet_cols)
       
       # Export-specific styling
       g_export <- g +
         theme_export +
-        theme(
-          axis.text.y = element_blank(),
-          axis.ticks.y = element_blank(),
-          legend.position = "bottom",
-          legend.direction = "horizontal",
-          legend.text = element_text(size = 9),
-          legend.key.width = grid::unit(1.2, "cm")
-        )
+        theme(axis.text.y = element_blank(),
+              axis.ticks.y = element_blank(),
+              legend.position = "bottom",
+              legend.direction = "horizontal",
+              legend.text = element_text(size = 9),
+              legend.key.width = grid::unit(1.2, "cm"))
       
-      ggsave(
-        filename = file,
-        plot = g_export,
-        width = dims$width,
-        height = dims$height,
-        dpi = 600,
-        units = "in",
-        bg = "white",
-        limitsize = FALSE
-      )
+      ggsave(filename = file,plot = g_export,width = dims$width,
+             height = dims$height,dpi = 600,units = "in",bg = "white",
+             limitsize = FALSE)
     }
   )
   
   output$download_hist_png <- downloadHandler(
-    
     filename = function() {
       paste0("histogram_", format(Sys.time(), "%Y%m%d_%H%M"), ".png")
     },
-    
     content = function(file) {
-      
       req(results())
-      
       r <- results()
       dims <- export_dimensions(r)
-      
-      g <- build_hist_plot(
-        r,
+      g <- build_hist_plot(r,
         show_beta = isTRUE(input$show_beta),
         show_AC_mix = isTRUE(input$show_AC_mix),
-        facet_cols = dims$facet_cols
-      )
+        facet_cols = dims$facet_cols)
       
-      g_export <- g +
-        theme_export +
-        theme(
+      g_export <- g + theme_export + theme(
           legend.position = "bottom",
           legend.direction = "horizontal",
           legend.text = element_text(size = 9),
-          legend.key.width = grid::unit(1.2, "cm")
-        )
+          legend.key.width = grid::unit(1.2, "cm"))
       
-      ggsave(
-        filename = file,
-        plot = g_export,
-        width = dims$width,
-        height = dims$height,
-        dpi = 600,
-        units = "in",
-        bg = "white",
-        limitsize = FALSE
-      )
+      ggsave(filename = file, plot = g_export, width = dims$width,
+             height = dims$height, dpi = 600, units = "in", bg = "white",
+             limitsize = FALSE)
     }
   )
   
   output$download_cdf_png <- downloadHandler(
-    
     filename = function() {
       paste0("cdf_", format(Sys.time(), "%Y%m%d_%H%M"), ".png")
     },
-    
     content = function(file) {
-      
       req(results())
-      
       r <- results()
       dims <- export_dimensions(r)
-      
-      g <- build_cdf_plot(
-        r,
+      g <- build_cdf_plot(r,
         show_individual = isTRUE(input$show_individual),
         show_beta = isTRUE(input$show_beta),
         show_AC_mix = isTRUE(input$show_AC_mix),
-        facet_cols = dims$facet_cols
-      )
+        facet_cols = dims$facet_cols)
       
-      g_export <- g +
-        theme_export +
-        theme(
+      g_export <- g + theme_export + theme(
           legend.position = "bottom",
           legend.direction = "horizontal",
           legend.text = element_text(size = 9),
-          legend.key.width = grid::unit(1.2, "cm")
-        )
+          legend.key.width = grid::unit(1.2, "cm"))
       
-      ggsave(
-        filename = file,
-        plot = g_export,
-        width = dims$width,
-        height = dims$height,
-        dpi = 600,
-        units = "in",
-        bg = "white",
-        limitsize = FALSE
-      )
+      ggsave(filename = file,plot = g_export,width = dims$width,
+             height = dims$height,dpi = 600,units = "in",bg = "white",
+             limitsize = FALSE)
     }
   )
   
@@ -1050,35 +1007,24 @@ server <- function(input, output, session) {
         } else {
           NULL
         },
-        
         selected_questions = input$question_multi,
         use_export_theme = TRUE,
         theme_export = theme_export,
-        facet_cols = dims$facet_cols
-      )
+        facet_cols = dims$facet_cols)
       
-      g1 <- g1 +
-        theme_export +
-        theme(
+      g1 <- g1 + theme_export + theme(
           axis.text.y = element_blank(),
           axis.ticks.y = element_blank(),
           legend.position = "bottom",
-          legend.text = element_text(size = 9)
-        )
+          legend.text = element_text(size = 9))
       
-      g2 <- g2 +
-        theme_export +
-        theme(
+      g2 <- g2 +theme_export + theme(
           legend.position = "bottom",
-          legend.text = element_text(size = 9)
-        )
+          legend.text = element_text(size = 9))
       
-      g3 <- g3 +
-        theme_export +
-        theme(
+      g3 <- g3 +theme_export + theme(
           legend.position = "bottom",
-          legend.text = element_text(size = 9)
-        )
+          legend.text = element_text(size = 9))
       
       # Save all figures to a temp directory
       outdir <- tempfile("plots_")
@@ -1089,45 +1035,17 @@ server <- function(input, output, session) {
       f3 <- file.path(outdir, paste0("cdf_",       Sys.Date(), ".png"))
       f4 <- file.path(outdir, paste0("individuals_", Sys.Date(), ".png"))
       
-      ggsave(
-        f1, g1,
-        width = dims$width,
-        height = dims$height,
-        dpi = 600,
-        units = "in",
-        bg = "white",
-        limitsize = FALSE
-      )
+      ggsave(f1, g1,width = dims$width,height = dims$height,
+             dpi = 600,units = "in",bg = "white",limitsize = FALSE)
       
-      ggsave(
-        f2, g2,
-        width = dims$width,
-        height = dims$height,
-        dpi = 600,
-        units = "in",
-        bg = "white",
-        limitsize = FALSE
-      )
+      ggsave(f2, g2,width = dims$width,height = dims$height,dpi = 600,
+             units = "in",bg = "white",limitsize = FALSE)
       
-      ggsave(
-        f3, g3,
-        width = dims$width,
-        height = dims$height,
-        dpi = 600,
-        units = "in",
-        bg = "white",
-        limitsize = FALSE
-      )
+      ggsave(f3, g3,width = dims$width,height = dims$height,dpi = 600,
+             units = "in",bg = "white",limitsize = FALSE)
       
-      ggsave(
-        f4, g4,
-        width = dims$width,
-        height = dims$height,
-        dpi = 600,
-        units = "in",
-        bg = "white",
-        limitsize = FALSE
-      )
+      ggsave(f4, g4, width = dims$width, height = dims$height, dpi = 600,
+             units = "in", bg = "white", limitsize = FALSE)
       
       # Write the summary CSV
       f_summary_csv <- file.path(outdir, paste0("summary_", Sys.Date(), ".csv"))
@@ -1165,52 +1083,42 @@ server <- function(input, output, session) {
   output$plot_density <- renderPlot({
     req(results())
     
-    build_density_plot(
-      r = results(),
+    build_density_plot(r = results(),
       show_individual = isTRUE(input$show_individual),
       show_beta       = isTRUE(input$show_beta),
       show_AC_mix    = isTRUE(input$show_AC_mix),
-      facet_cols      = NULL   
-    )
+      facet_cols      = NULL   )
   })
   
   # Plots: Histogram + Beta fit (faceted by full label)
   output$plot_hist <- renderPlot({
     req(results())
-    
-    build_hist_plot(
-      r = results(),
+    build_hist_plot(r = results(),
       show_beta       = isTRUE(input$show_beta),
       show_AC_mix    = isTRUE(input$show_AC_mix),
-      facet_cols      = NULL
-    )
+      facet_cols      = NULL)
   })
   
   # Plots: CDF comparison (faceted by full label)
   output$plot_cdf <- renderPlot({
     req(results())
-    
-    build_cdf_plot(
-      r = results(),
+    build_cdf_plot(r = results(),
       show_individual = isTRUE(input$show_individual),
       show_beta       = isTRUE(input$show_beta),
       show_AC_mix    = isTRUE(input$show_AC_mix),
-      facet_cols      = NULL
-    )
+      facet_cols      = NULL)
   })
   
+  ###############################################################################
+  # SUMMARY DASHBOARD
+  ###############################################################################
   # Visual summary cards
   output$summary_dashboard <- renderUI({
-    
     req(results())
-    
     s <- results()$summaries
-    
     # Summary cards are intended for a single selected question
     n_questions <- length(unique(s$Question))
-    
     if (n_questions != 1) {
-      
       return(
         div(
           style = "
@@ -1220,15 +1128,10 @@ server <- function(input, output, session) {
       border-radius: 6px;
       margin-bottom: 15px;
       ",
-          
           tags$strong("Multiple questions selected"),
-          
           tags$br(),
-          
-          tags$span(
-            style = "color: #666666;",
-            "Select a single question to display the visual summary."
-          )
+          tags$span(style = "color: #666666;",
+            "Select a single question to display the visual summary.")
         )
       )
     }
@@ -1237,20 +1140,15 @@ server <- function(input, output, session) {
       multi_round <- TRUE
       s1 <- s %>% filter(as.character(Round) == "1")
       s2 <- s %>% filter(as.character(Round) == "2")
-      
     } else {
       multi_round <- FALSE
       s1 <- s
       s2 <- s
     }
     if (!multi_round) {
-      
       # original cards
-      
     } else {
-      
       # round comparison cards
-      
     }
     
     # Use Round 2 metrics in cards for now
@@ -1258,9 +1156,7 @@ server <- function(input, output, session) {
     eqw_delta <- s2$EqW_Mean - s1$EqW_Mean
     AC_delta <- s2$ACW_Mean - s1$ACW_Mean
     conf_delta <- s2$Mean_AC - s1$Mean_AC
-    
     delta_colour <- function(x) {
-      
       if (is.na(x)) {
         "#666666"
       } else if (x > 0) {
@@ -1288,11 +1184,7 @@ server <- function(input, output, session) {
         "
     font-size: 28px;
     font-weight: 600;
-    color: ",
-        colour,
-        ";
-    "
-      )
+    color: ", colour,  ";")
     }
     
     label_style <- "
@@ -1303,95 +1195,36 @@ server <- function(input, output, session) {
     
     fluidRow(
       # Pooled mean
-      column(
-        4,
-        div(
-          style = card_style,
-          div(
-            style = value_style(delta_colour(eqw_delta)),
-            sprintf("%+.3f", eqw_delta)
-          ),
-          div(
-            style = label_style,
-            "Δ Equal-weight mean"
-          )
-        )
-      ),
-      
+      column(4, div(style = card_style,
+                    div(style = value_style(delta_colour(eqw_delta)),
+                        sprintf("%+.3f", eqw_delta)),
+                    div(style = label_style, "Δ Equal-weight mean"))),
       # AC weighted mean
-      column(
-        4,
-        div(
-          style = card_style,
-          div(
-            style = value_style(delta_colour(AC_delta)),
-            sprintf("%+.3f", AC_delta)
-          ),
-          div(
-            style = label_style,
-            "Δ AC-weighted mean"
-          )
-        )
-      ),
+      column(4, div(style = card_style, div(
+        style = value_style(delta_colour(AC_delta)),
+        sprintf("%+.3f", AC_delta)),
+        div(style = label_style, "Δ AC-weighted mean"))),
       
       # Mean Assessment confidence
-      column(
-        4,
-        div(
-          style = card_style,
-          div(
-            style = value_style(delta_colour(conf_delta)),
-            paste0(
-              sprintf("%+.0f", conf_delta),
-              "%"
-            )
-          ),
-          div(
-            style = label_style,
-            "Δ Assessment confidence"
-          )
-        )
-      ),
+      column(4, div(style = card_style,
+                    div(style = value_style(delta_colour(conf_delta)),
+                        paste0(sprintf("%+.0f", conf_delta), "%")),
+                    div(style = label_style, "Δ Assessment confidence"))),
       
       # Equal-weight means across rounds
-      column(
-        4,
-        div(
-          style = card_style,
-          div(
-            style = value_style("#245674"),
-            paste0(
-              sprintf("%.3f", s1$EqW_Mean),
-              " \u2192 ",
-              sprintf("%.3f", s2$EqW_Mean)
-            )
-          ),
-          div(
-            style = label_style,
-            "Equal-weight mean (R1 \u2192 R2)"
-          )
-        )
-      ),
+      column(4, div(style = card_style,
+                    div(style = value_style("#245674"),
+                        paste0(sprintf("%.3f", s1$EqW_Mean)," \u2192 ",
+                               sprintf("%.3f", s2$EqW_Mean))),
+          div(style = label_style, "Equal-weight mean (R1 \u2192 R2)"))),
       
       # AC-weighted means across rounds
-      column(
-        4,
-        div(
-          style = card_style,
-          div(
-            style = value_style("#245674"),
-            paste0(
-              sprintf("%.3f", s1$ACW_Mean),
-              " \u2192 ",
-              sprintf("%.3f", s2$ACW_Mean)
-            )
-          ),
-          div(
-            style = label_style,
-            "AC-weighted mean (R1 \u2192 R2)"
-          )
-        )
-      ),
+      column(4, div(
+        style = card_style,
+        div(style = value_style("#245674"),
+            paste0(sprintf("%.3f", s1$ACW_Mean)," \u2192 ",
+                   sprintf("%.3f", s2$ACW_Mean))),
+          div(style = label_style,"AC-weighted mean (R1 \u2192 R2)"))),
       
       # Number of experts
       column(4,div(style = card_style,
@@ -1400,64 +1233,47 @@ server <- function(input, output, session) {
                    div(style = label_style,"Experts"))))
   })
   
+  ###############################################################################
+  # SUMMARY TABLES AND REPORTING
+  ###############################################################################
   output$round_comparison_table <- renderTable({
-    
     req(results())
-    
     summ <- results()$summaries
-    
     # Only build comparison if Round exists
     if (!"Round" %in% names(summ)) {
       return(NULL)
     }
-    
     # Require at least two rounds
     if (!all(c("1", "2") %in% unique(as.character(summ$Round)))) {
       return(NULL)
     }
-    
     r1 <- summ %>%
       filter(as.character(Round) == "1") %>%
-      select(
-        Question,
-        EqW_Mean_R1 = EqW_Mean,
-        ACW_Mean_R1 = ACW_Mean,
-        Mean_AC_R1 = Mean_AC
-      )
+      select(Question,
+             EqW_Mean_R1 = EqW_Mean,
+             ACW_Mean_R1 = ACW_Mean,
+             Mean_AC_R1 = Mean_AC)
     
     r2 <- summ %>%
       filter(as.character(Round) == "2") %>%
-      select(
-        Question,
-        EqW_Mean_R2 = EqW_Mean,
-        ACW_Mean_R2 = ACW_Mean,
-        Mean_AC_R2 = Mean_AC
-      )
+      select(Question,
+             EqW_Mean_R2 = EqW_Mean,
+             ACW_Mean_R2 = ACW_Mean,
+             Mean_AC_R2 = Mean_AC)
     
     left_join(r1, r2, by = "Question") %>%
-      mutate(
-        `Δ Equal-weight mean` =
-          EqW_Mean_R2 - EqW_Mean_R1,
-        
-        `Δ AC-weighted mean` =
-          ACW_Mean_R2 - ACW_Mean_R1,
-        
-        `Δ Assessment confidence` =
-          Mean_AC_R2 - Mean_AC_R1
-      ) %>%
-      rename(
-        `Equal-weight mean (R1)` = EqW_Mean_R1,
-        `Equal-weight mean (R2)` = EqW_Mean_R2,
-        
-        `AC-weighted mean (R1)` = ACW_Mean_R1,
-        `AC-weighted mean (R2)` = ACW_Mean_R2,
-        
-        `Average Assessment confidence (R1)` = Mean_AC_R1,
-        `Average Assessment confidence (R2)` = Mean_AC_R2
-      ) %>%
-    mutate(
-      across(where(is.numeric), ~ round(.x, 2))
-    )
+      mutate(`Δ Equal-weight mean` = EqW_Mean_R2 - EqW_Mean_R1,
+             `Δ AC-weighted mean` = ACW_Mean_R2 - ACW_Mean_R1,
+             `Δ Assessment confidence` = Mean_AC_R2 - Mean_AC_R1) %>%
+     
+       rename(`Equal-weight mean (R1)` = EqW_Mean_R1,
+              `Equal-weight mean (R2)` = EqW_Mean_R2,
+              `AC-weighted mean (R1)` = ACW_Mean_R1,
+              `AC-weighted mean (R2)` = ACW_Mean_R2,
+              `Average Assessment confidence (R1)` = Mean_AC_R1,
+              `Average Assessment confidence (R2)` = Mean_AC_R2) %>%
+   
+       mutate(across(where(is.numeric), ~ round(.x, 2)))
   })
   
   # Summary table & download
@@ -1482,7 +1298,6 @@ server <- function(input, output, session) {
       req(results())
       report_data <- build_report_data(results_obj = results())
       render_facilitator_report(report_data,file)})
-  
 }
 
 # Run app
