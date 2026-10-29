@@ -180,6 +180,18 @@ server <- function(input, output, session) {
                 choices = c("All", qs), selected = "All", multiple = TRUE)
   })
   
+  output$round_filter_ui <- renderUI({
+    req(raw_df())
+    if (is.null(input$col_round) ||
+        identical(input$col_round, "<none>")) {
+      return(NULL)
+    }
+    rounds <- sort(unique(raw_df()[[input$col_round]]))
+    selectInput("round_filter", "Round", 
+                choices = c("All", rounds),
+                selected = "All")
+  })
+  
   ###########################################################################
   # ANALYSIS ENGINE
   # Triggered when the user runs the analysis.
@@ -605,6 +617,62 @@ server <- function(input, output, session) {
     )
   }, ignoreInit = TRUE)
   
+  plot_results <- reactive({
+    req(results())
+    r <- results()
+    if (is.null(input$round_filter) ||
+        input$round_filter == "All") {
+      return(r)
+    }
+    selected_round <- as.character(input$round_filter)
+    if ("Round" %in% names(r$summaries)) {
+      
+      r$summaries <- r$summaries %>%
+        filter(as.character(Round) == selected_round)
+      
+      r$dens_mix_all <- r$dens_mix_all %>%
+        filter(as.character(Round) == selected_round)
+      
+      r$dens_mix_w_all <- r$dens_mix_w_all %>%
+        filter(as.character(Round) == selected_round)
+      
+      r$dens_ind_all <- r$dens_ind_all %>%
+        filter(as.character(Round) == selected_round)
+      
+      r$beta_all <- r$beta_all %>%
+        filter(as.character(Round) == selected_round)
+      
+      r$beta_w_all <- r$beta_w_all %>%
+        filter(as.character(Round) == selected_round)
+      
+      r$cdf_mix_all <- r$cdf_mix_all %>%
+        filter(as.character(Round) == selected_round)
+      
+      r$cdf_mix_w_all <- r$cdf_mix_w_all %>%
+        filter(as.character(Round) == selected_round)
+      
+      r$cdf_emp_all <- r$cdf_emp_all %>%
+        filter(as.character(Round) == selected_round)
+      
+      r$cdf_emp_w_all <- r$cdf_emp_w_all %>%
+        filter(as.character(Round) == selected_round)
+      
+      r$cdf_beta_all <- r$cdf_beta_all %>%
+        filter(as.character(Round) == selected_round)
+      
+      r$cdf_beta_w_all <- r$cdf_beta_w_all %>%
+        filter(as.character(Round) == selected_round)
+      
+      r$cdf_ind_all <- r$cdf_ind_all %>%
+        filter(as.character(Round) == selected_round)
+      
+      r$samples_all <- r$samples_all %>%
+        filter(as.character(Round) == selected_round)
+    }
+    
+    r
+  })
+  
   ###########################################################################
   # Single PNG downloads (use current selections in results()) 
   ###########################################################################
@@ -844,8 +912,20 @@ server <- function(input, output, session) {
   output$plot_participants <- renderPlot({
     req(results())
     
+    df_plot <- raw_df()
+    
+    if (!is.null(input$round_filter) &&
+        input$round_filter != "All" &&
+        !is.null(input$col_round) &&
+        input$col_round != "<none>") {
+      
+      df_plot <- df_plot %>%
+        filter(as.character(.data[[input$col_round]]) ==
+                 as.character(input$round_filter))
+    }
+    
     build_individuals_plot(
-      df_raw = raw_df(),
+      df_raw = df_plot,
       id_col = input$col_id,
       lpp_col = input$col_lpp,
       bgp_col = input$col_bgp,
@@ -865,9 +945,9 @@ server <- function(input, output, session) {
   
   # Plots: Mixture density (faceted by full label)
   output$plot_density <- renderPlot({
-    req(results())
+    req(plot_results())
     
-    build_density_plot(r = results(),
+    build_density_plot(r = plot_results(),
       show_individual = isTRUE(input$show_individual),
       show_beta       = isTRUE(input$show_beta),
       show_AC_mix    = isTRUE(input$show_AC_mix),
@@ -876,8 +956,8 @@ server <- function(input, output, session) {
   
   # Plots: Histogram + Beta fit (faceted by full label)
   output$plot_hist <- renderPlot({
-    req(results())
-    build_hist_plot(r = results(),
+    req(plot_results())
+    build_hist_plot(r = plot_results(),
       show_beta       = isTRUE(input$show_beta),
       show_AC_mix    = isTRUE(input$show_AC_mix),
       facet_cols      = NULL)
@@ -885,8 +965,8 @@ server <- function(input, output, session) {
   
   # Plots: CDF comparison (faceted by full label)
   output$plot_cdf <- renderPlot({
-    req(results())
-    build_cdf_plot(r = results(),
+    req(plot_results())
+    build_cdf_plot(r = plot_results(),
       show_individual = isTRUE(input$show_individual),
       show_beta       = isTRUE(input$show_beta),
       show_AC_mix    = isTRUE(input$show_AC_mix),
@@ -898,8 +978,11 @@ server <- function(input, output, session) {
   ###############################################################################
   # Visual summary cards
   output$summary_dashboard <- renderUI({
-    req(results())
-    s <- results()$summaries
+    req(plot_results())
+    s <- plot_results()$summaries
+    single_round_view <-
+      !is.null(input$round_filter) &&
+      input$round_filter != "All"
     # Summary cards are intended for a single selected question
     n_questions <- length(unique(s$Question))
     if (n_questions != 1) {
@@ -920,7 +1003,9 @@ server <- function(input, output, session) {
       )
     }
     
-    if ("Round" %in% names(s) && nrow(s) == 2) {
+    if (!single_round_view &&
+        "Round" %in% names(s) &&
+        all(c("1", "2") %in% as.character(s$Round))) {
       multi_round <- TRUE
       s1 <- s %>% filter(as.character(Round) == "1")
       s2 <- s %>% filter(as.character(Round) == "2")
@@ -929,17 +1014,7 @@ server <- function(input, output, session) {
       s1 <- s
       s2 <- s
     }
-    if (!multi_round) {
-      # original cards
-    } else {
-      # round comparison cards
-    }
     
-    # Use Round 2 metrics in cards for now
-    s <- s2
-    eqw_delta <- s2$EqW_Mean - s1$EqW_Mean
-    AC_delta <- s2$ACW_Mean - s1$ACW_Mean
-    conf_delta <- s2$Mean_AC - s1$Mean_AC
     delta_colour <- function(x) {
       if (is.na(x)) {
         "#666666"
@@ -976,6 +1051,13 @@ server <- function(input, output, session) {
     font-size: 13px;
     margin-top: 5px;
   "
+    
+    # Use Round 2 metrics in cards for now
+    if (multi_round) {
+    s <- s2
+    eqw_delta <- s2$EqW_Mean - s1$EqW_Mean
+    AC_delta <- s2$ACW_Mean - s1$ACW_Mean
+    conf_delta <- s2$Mean_AC - s1$Mean_AC
     
     fluidRow(
       # Pooled mean
@@ -1015,12 +1097,40 @@ server <- function(input, output, session) {
                    div(
                      style = value_style("#245674"), s$N_Participants),
                    div(style = label_style,"Experts"))))
-  })
+    } else {
+      s <- s1
+      fluidRow(column(3,
+                      div(style = card_style,
+                          div(style = value_style("#245674"),
+                              sprintf("%.3f", s$EqW_Mean)),
+                          div(style = label_style, "Equal-weight mean"))),
+               column(3,
+                      div(style = card_style,
+                          div(style = value_style("#245674"),
+                              sprintf("%.3f", s$ACW_Mean)),
+                          div(style = label_style, "AC-weighted mean"))),
+               column(3,
+                      div(style = card_style,
+                          div(style = value_style("#245674"),
+                              paste0(round(s$Mean_AC), "%")),
+                          div(style = label_style, "Average assessment confidence"))),
+               column(3, 
+                      div(style = card_style,
+                          div(style = value_style("#245674"),
+                              s$N_Participants),
+                          div(style = label_style, "Experts"))))
+    }})
+  
   ###############################################################################
   # SUMMARY TABLES AND REPORTING
   ################################################################################
   output$round_comparison_table <- renderTable({
     req(results())
+    # Round comparison only makes sense when viewing all rounds
+    if (!is.null(input$round_filter) &&
+        input$round_filter != "All") {
+      return(NULL)
+    }
     summ <- results()$summaries
     # Only build comparison if Round exists
     if (!"Round" %in% names(summ)) {

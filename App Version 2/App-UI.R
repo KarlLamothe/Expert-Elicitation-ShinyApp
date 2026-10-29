@@ -23,15 +23,17 @@ ui <- fluidPage(
                        actionButton("refresh_sheet",
                                     "Get Latest Expert Responses",
                                     class = "btn-success"))),
-      # ============================================================
-      # QUESTIONS
-      # ============================================================
-      h4("Questions"),
-      uiOutput("question_filter_ui"),
-      tags$hr(),
-      # ============================================================
-      # ANALYSIS OPTIONS
-      # ============================================================
+    # ============================================================
+    # QUESTIONS
+    # ============================================================
+    h4("Questions"),
+    uiOutput("question_filter_ui"),
+    uiOutput("round_filter_ui"),
+    tags$hr(),
+    
+    # ============================================================
+    # ANALYSIS OPTIONS
+    # ============================================================
       tags$details(tags$summary(
           style = "cursor: pointer; font-weight: 600; font-size: 18px;",
           "Analysis Options"),
