@@ -5,7 +5,7 @@ ui <- fluidPage(
   theme = bs_theme(version = 5, bootswatch = "flatly", primary = "#1F5A7A",
                    secondary = "#6C757D", success = "#4C956C"),
   titlePanel("Expert Elicitation Application"),
-  sidebarLayout(sidebarPanel(
+  sidebarLayout(sidebarPanel(width=3,
     conditionalPanel(condition = "input.main_tab == 'Expert Estimates'", 
       h4("Data"),
       radioButtons("data_source", "Data source",
@@ -22,9 +22,7 @@ ui <- fluidPage(
       conditionalPanel(condition = "input.data_source == 'google'",
                        actionButton("refresh_sheet",
                                     "Get Latest Expert Responses",
-                                    class = "btn-success")),
-      br(),
-      br()),
+                                    class = "btn-success"))),
       # ============================================================
       # QUESTIONS
       # ============================================================
@@ -42,7 +40,7 @@ ui <- fluidPage(
                         "Show individual expert curves", TRUE),
           checkboxInput("show_AC_mix",
                         "Show assessment confidence-weighted mixture", TRUE),
-          checkboxInput("show_beta", "Show Beta approximation", FALSE),
+          checkboxInput("show_beta", "Show Beta approximation", TRUE),
           tags$details(tags$summary(
             style = "cursor: pointer; font-weight: 600;",
             "Advanced analysis settings"),
@@ -99,7 +97,7 @@ ui <- fluidPage(
                        class = "btn-default btn-sm"),
         downloadButton("download_report_html", "Facilitator Report (HTML)",
                        class = "btn-default btn-sm"))),
-    mainPanel(
+    mainPanel(width=9,
       tabsetPanel(id = "main_tab",
         tabPanel("Expert Estimates",
           br(),

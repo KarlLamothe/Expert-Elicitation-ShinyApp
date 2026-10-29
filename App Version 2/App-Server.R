@@ -259,7 +259,6 @@ server <- function(input, output, session) {
     # Single-round analysis
     # -------------------------------------------------------------------------
     if (is.null(round_col_val)) {
-      
       res_list <- lapply(qs, function(q) {
         df_q <- df %>%
           filter(.data[[q_col]] == q)
@@ -275,7 +274,6 @@ server <- function(input, output, session) {
           seed    = NULL,
           question_label = as.character(q))
       })
-      
       names(res_list) <- as.character(qs)
       
       # -------------------------------------------------------------------------
@@ -327,18 +325,12 @@ server <- function(input, output, session) {
           result_q <- res_list[[q]]
           if (!isTRUE(result_q$AC_available)) {
             if (identical(
-              result_q$AC_unavailable_reason,
-              "fewer_than_two"
-            )) {
-              affected_fewer_than_two <- c(
-                affected_fewer_than_two,
-                paste0("Question ", q))
+              result_q$AC_unavailable_reason, "fewer_than_two")) {
+              affected_fewer_than_two <- c(affected_fewer_than_two,
+                                           paste0("Question ", q))
             } else if (identical(
-              result_q$AC_unavailable_reason,
-              "all_zero")) {
-              affected_all_zero <- c(
-                affected_all_zero,
-                paste0("Question ", q))
+              result_q$AC_unavailable_reason,"all_zero")) {
+              affected_all_zero <- c(affected_all_zero, paste0("Question ", q))
             }
           }
         }
@@ -353,22 +345,11 @@ server <- function(input, output, session) {
           for (r in names(res_list[[q]])) {
             result_qr <- res_list[[q]][[r]]
             if (!isTRUE(result_qr$AC_available)) {
-              label <- paste0(
-                "Question ", q,
-                " (Round ", r, ")")
-              if (identical(
-                result_qr$AC_unavailable_reason,
-                "fewer_than_two"
-              )) {
-                affected_fewer_than_two <- c(
-                  affected_fewer_than_two,
-                  label)
-              } else if (identical(
-                result_qr$AC_unavailable_reason,
-                "all_zero"
-              )) {
-                affected_all_zero <- c(affected_all_zero, label)
-              }
+              label <- paste0("Question ", q, " (Round ", r, ")")
+              if (identical(result_qr$AC_unavailable_reason, "fewer_than_two")) {
+                affected_fewer_than_two <- c(affected_fewer_than_two, label)
+              } else if (identical(result_qr$AC_unavailable_reason, "all_zero")) {
+                affected_all_zero <- c(affected_all_zero, label)}
             }
           }
         }
@@ -380,19 +361,12 @@ server <- function(input, output, session) {
       # ---------------------------------------------------------------
       
       if (length(affected_fewer_than_two) > 0) {
-        showNotification(
-          paste0(
+        showNotification(paste0(
             "Assessment Confidence-weighted results are unavailable for ",
-            paste(
-              affected_fewer_than_two,
-              collapse = ", "
-            ),
+            paste(affected_fewer_than_two, collapse = ", "),
             " because fewer than two participants provided Assessment Confidence. ",
-            "Equal-weight results remain available."
-          ),
-          type = "warning",
-          duration = 10
-        )
+            "Equal-weight results remain available."),  type = "warning",
+          duration = 10)
       }
       
       # ---------------------------------------------------------------
@@ -446,8 +420,7 @@ server <- function(input, output, session) {
       samples_all <- bind_rows(
         lapply(names(res_list), function(q) {
           tibble(Question = q, samples = res_list[[q]]$samples)
-        })
-      )
+        }))
     } else {
       # ==============================================================
       # MULTI-ROUND DATA
@@ -456,351 +429,162 @@ server <- function(input, output, session) {
       
       summary_all <- bind_rows(
         lapply(names(res_list), function(q) {
-          
-          bind_rows(
-            lapply(names(res_list[[q]]), function(rnd) {
-              
+          bind_rows(lapply(names(res_list[[q]]), function(rnd) {
               res_list[[q]][[rnd]]$summary %>%
                 mutate(Round = rnd, .after = Question)
-            })
-          )
+            }))
         })
       )
       
       dens_mix_all <- bind_rows(
         lapply(names(res_list), function(q) {
-          
-          bind_rows(
-            lapply(names(res_list[[q]]), function(rnd) {
-              
+          bind_rows(lapply(names(res_list[[q]]), function(rnd) {
               res_list[[q]][[rnd]]$facet$mixture %>%
-                mutate(Round = rnd, .after = Question)
-            })
-          )
-        })
-      )
+                mutate(Round = rnd, .after = Question)}))}))
       
       dens_mix_w_all <- bind_rows(
         lapply(names(res_list), function(q) {
-          
-          bind_rows(
-            lapply(names(res_list[[q]]), function(rnd) {
-              
+          bind_rows(lapply(names(res_list[[q]]), function(rnd) {
               res_list[[q]][[rnd]]$facet$mixture_w %>%
-                mutate(Round = rnd, .after = Question)
-            })
-          )
-        })
-      )
+                mutate(Round = rnd, .after = Question)}))}))
       
       dens_ind_all <- bind_rows(
         lapply(names(res_list), function(q) {
-          
-          bind_rows(
-            lapply(names(res_list[[q]]), function(rnd) {
-              
+          bind_rows(lapply(names(res_list[[q]]), function(rnd) {
               res_list[[q]][[rnd]]$facet$individual %>%
-                mutate(Round = rnd, .after = Question)
-            })
-          )
-        })
-      )
+                mutate(Round = rnd, .after = Question)}))}))
       
       beta_all <- bind_rows(
         lapply(names(res_list), function(q) {
-          
-          bind_rows(
-            lapply(names(res_list[[q]]), function(rnd) {
-              
+          bind_rows(lapply(names(res_list[[q]]), function(rnd) {
               res_list[[q]][[rnd]]$facet$beta %>%
-                mutate(Round = rnd, .after = Question)
-            })
-          )
-        })
-      )
+                mutate(Round = rnd, .after = Question)}))}))
       
       beta_w_all <- bind_rows(
         lapply(names(res_list), function(q) {
-          
-          bind_rows(
-            lapply(names(res_list[[q]]), function(rnd) {
-              
+          bind_rows(lapply(names(res_list[[q]]), function(rnd) {
               res_list[[q]][[rnd]]$facet$beta_w %>%
-                mutate(Round = rnd, .after = Question)
-            })
-          )
-        })
-      )
+                mutate(Round = rnd, .after = Question)}))}))
       
       cdf_mix_all <- bind_rows(
         lapply(names(res_list), function(q) {
-          
-          bind_rows(
-            lapply(names(res_list[[q]]), function(rnd) {
-              
+          bind_rows(lapply(names(res_list[[q]]), function(rnd) {
               res_list[[q]][[rnd]]$facet$cdf_mixture %>%
-                mutate(Round = rnd, .after = Question)
-            })
-          )
-        })
-      )
+                mutate(Round = rnd, .after = Question)}))}))
       
       cdf_mix_w_all <- bind_rows(
         lapply(names(res_list), function(q) {
-          
-          bind_rows(
-            lapply(names(res_list[[q]]), function(rnd) {
-              
+          bind_rows(lapply(names(res_list[[q]]), function(rnd) {
               res_list[[q]][[rnd]]$facet$cdf_mixture_w %>%
-                mutate(Round = rnd, .after = Question)
-            })
-          )
-        })
-      )
+                mutate(Round = rnd, .after = Question)}))}))
       
       cdf_emp_all <- bind_rows(
         lapply(names(res_list), function(q) {
-          
-          bind_rows(
-            lapply(names(res_list[[q]]), function(rnd) {
-              
+          bind_rows(lapply(names(res_list[[q]]), function(rnd) {
               res_list[[q]][[rnd]]$facet$cdf_emp %>%
-                mutate(Round = rnd, .after = Question)
-            })
-          )
-        })
-      )
+                mutate(Round = rnd, .after = Question)}))}))
       
       cdf_emp_w_all <- bind_rows(
         lapply(names(res_list), function(q) {
-          
-          bind_rows(
-            lapply(names(res_list[[q]]), function(rnd) {
-              
+          bind_rows(lapply(names(res_list[[q]]), function(rnd) {
               res_list[[q]][[rnd]]$facet$cdf_emp_w %>%
-                mutate(Round = rnd, .after = Question)
-            })
-          )
-        })
-      )
+                mutate(Round = rnd, .after = Question)}))}))
       
       cdf_beta_all <- bind_rows(
         lapply(names(res_list), function(q) {
-          
-          bind_rows(
-            lapply(names(res_list[[q]]), function(rnd) {
-              
+          bind_rows(lapply(names(res_list[[q]]), function(rnd) {
               res_list[[q]][[rnd]]$facet$cdf_beta %>%
-                mutate(Round = rnd, .after = Question)
-            })
-          )
-        })
-      )
+                mutate(Round = rnd, .after = Question)}))}))
       
       cdf_beta_w_all <- bind_rows(
         lapply(names(res_list), function(q) {
-          
-          bind_rows(
-            lapply(names(res_list[[q]]), function(rnd) {
-              
+          bind_rows(lapply(names(res_list[[q]]), function(rnd) {
               res_list[[q]][[rnd]]$facet$cdf_beta_w %>%
-                mutate(Round = rnd, .after = Question)
-            })
-          )
-        })
-      )
+                mutate(Round = rnd, .after = Question)}))}))
       
       cdf_ind_all <- bind_rows(
         lapply(names(res_list), function(q) {
-          
-          bind_rows(
-            lapply(names(res_list[[q]]), function(rnd) {
-              
+          bind_rows(lapply(names(res_list[[q]]), function(rnd) {
               res_list[[q]][[rnd]]$facet$cdf_individual %>%
-                mutate(Round = rnd, .after = Question)
-            })
-          )
-        })
-      )
+                mutate(Round = rnd, .after = Question)}))}))
       
       samples_all <- bind_rows(
         lapply(names(res_list), function(q) {
-          
-          bind_rows(
-            lapply(names(res_list[[q]]), function(rnd) {
-              
-              tibble(
-                Question = q,
-                Round = rnd,
-                samples = res_list[[q]][[rnd]]$samples
-              )
-            })
-          )
-        })
-      )
+          bind_rows(lapply(names(res_list[[q]]), function(rnd) {
+              tibble(Question = q,
+                     Round = rnd,
+                     samples = res_list[[q]][[rnd]]$samples)}))}))
       
       # Create combined Question-Round labels for faceting
       # Define Question x Round facet order so Round 2 appears
       # directly below Round 1 for each question block
       questions_order <- unique(as.character(summary_all$Question))
-      
-      rounds_order <- sort(
-        unique(as.character(summary_all$Round))
-      )
-      
-      n_facet_cols <- choose_round_facet_cols(
-        length(questions_order)
-      )
+      rounds_order <- sort(unique(as.character(summary_all$Round)))
+      n_facet_cols <- choose_round_facet_cols(length(questions_order))
       
       question_round_levels <- unlist(
-        lapply(
-          seq(
-            1,
-            length(questions_order),
-            by = n_facet_cols
-          ),
+        lapply(seq(1,length(questions_order),by = n_facet_cols),
           function(i) {
             qs_block <- questions_order[
-              i:min(
-                i + n_facet_cols - 1,
-                length(questions_order)
-              )
-            ]
-            unlist(
-              lapply(
-                rounds_order,
-                function(rnd) {
-                  paste0(
-                    "Question ", qs_block,
-                    "\nRound ", rnd
-                  )
-                }
-              )
-            )
-          }
-        )
-      )
+              i:min(i + n_facet_cols - 1, length(questions_order))]
+            unlist(lapply(rounds_order,
+                          function(rnd) {
+                            paste0("Question ", qs_block, "\nRound ", rnd)}))}))
       
       cdf_mix_all <- cdf_mix_all %>%
-        mutate(
-          Question_Round = factor(
-            paste0(
-              "Question ", Question,
-              "\nRound ", Round
-            ),
-            levels = question_round_levels
-          )
-        )
+        mutate(Question_Round = factor(paste0(
+          "Question ", Question,"\nRound ", Round),
+            levels = question_round_levels))
       
       cdf_mix_w_all <- cdf_mix_w_all %>%
-        mutate(
-          Question_Round = factor(
-            paste0(
-              "Question ", Question,
-              "\nRound ", Round
-            ),
-            levels = question_round_levels
-          )
-        )
+        mutate(Question_Round = factor(
+          paste0("Question ", Question, "\nRound ", Round),
+          levels = question_round_levels))
       
       cdf_emp_all <- cdf_emp_all %>%
-        mutate(
-          Question_Round = factor(
-            paste0(
-              "Question ", Question,
-              "\nRound ", Round
-            ),
-            levels = question_round_levels
-          )
-        )
+        mutate(Question_Round = factor(
+          paste0("Question ", Question, "\nRound ", Round),
+          levels = question_round_levels))
       
       cdf_emp_w_all <- cdf_emp_w_all %>%
-        mutate(
-          Question_Round = factor(
-            paste0(
-              "Question ", Question,
-              "\nRound ", Round
-            ),
-            levels = question_round_levels
-          )
-        )
+        mutate(Question_Round = factor(
+          paste0("Question ", Question, "\nRound ", Round),
+          levels = question_round_levels))
       
       cdf_beta_all <- cdf_beta_all %>%
-        mutate(
-          Question_Round = factor(
-            paste0(
-              "Question ", Question,
-              "\nRound ", Round
-            ),
-            levels = question_round_levels
-          )
-        )
+        mutate(Question_Round = factor(
+          paste0("Question ", Question, "\nRound ", Round), 
+          levels = question_round_levels))
       
       cdf_beta_w_all <- cdf_beta_w_all %>%
-        mutate(
-          Question_Round = factor(
-            paste0(
-              "Question ", Question,
-              "\nRound ", Round
-            ),
-            levels = question_round_levels
-          )
-        )
+        mutate(Question_Round = factor(
+          paste0("Question ", Question, "\nRound ", Round), 
+          levels = question_round_levels))
       
       cdf_ind_all <- cdf_ind_all %>%
-        mutate(
-          Question_Round = factor(
-            paste0(
-              "Question ", Question,
-              "\nRound ", Round
-            ),
-            levels = question_round_levels
-          )
-        )
+        mutate(Question_Round = factor(
+          paste0("Question ", Question, "\nRound ", Round),
+          levels = question_round_levels))
       
       dens_mix_all <- dens_mix_all %>%
-        mutate(
-          Question_Round = factor(
-            paste0(
-              "Question ", Question,
-              "\nRound ", Round
-            ),
-            levels = question_round_levels
-          )
-        )
+        mutate(Question_Round = factor(
+          paste0("Question ", Question, "\nRound ", Round),
+          levels = question_round_levels))
       
       dens_mix_w_all <- dens_mix_w_all %>%
-        mutate(
-          Question_Round = factor(
-            paste0(
-              "Question ", Question,
-              "\nRound ", Round
-            ),
-            levels = question_round_levels
-          )
-        )
+        mutate(Question_Round = factor(
+          paste0("Question ", Question, "\nRound ", Round),
+          levels = question_round_levels))
       
       dens_ind_all <- dens_ind_all %>%
-        mutate(
-          Question_Round = factor(
-            paste0(
-              "Question ", Question,
-              "\nRound ", Round
-            ),
-            levels = question_round_levels
-          )
-        )
+        mutate(Question_Round = factor(
+          paste0("Question ", Question, "\nRound ", Round),
+          levels = question_round_levels))
       
       beta_all <- beta_all %>%
-        mutate(
-          Question_Round = factor(
-            paste0(
-              "Question ", Question,
-              "\nRound ", Round
-            ),
-            levels = question_round_levels
-          )
-        )
+        mutate(Question_Round = factor(
+          paste0("Question ", Question, "\nRound ", Round),
+          levels = question_round_levels ))
     }
     
     list(
@@ -1232,10 +1016,9 @@ server <- function(input, output, session) {
                      style = value_style("#245674"), s$N_Participants),
                    div(style = label_style,"Experts"))))
   })
-  
   ###############################################################################
   # SUMMARY TABLES AND REPORTING
-  ###############################################################################
+  ################################################################################
   output$round_comparison_table <- renderTable({
     req(results())
     summ <- results()$summaries
