@@ -22,8 +22,8 @@ build_density_plot <- function(r,
     guides(color = guide_legend(order = 1, nrow = 1)) +
     theme(axis.text.y = element_blank(),
           axis.ticks.y = element_blank(),
-          legend.position = "bottom",
-          legend.direction = "horizontal")
+          theme(legend.position = "bottom",
+          legend.direction = "horizontal"))
   
   # Anonymous individual expert distributions
   if (isTRUE(show_individual)) {

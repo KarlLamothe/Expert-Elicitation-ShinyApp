@@ -44,7 +44,7 @@ theme_app <- theme_bw() +
   theme(axis.title   = element_text(size=18, family="sans", colour="black"),
         axis.text.x  = element_text(size=14, family="sans", colour="black"),
         axis.text.y  = element_text(size=14, family="sans", colour="black"),
-        strip.text   = element_text(size=15, family="sans", colour="black"),
+        strip.text   = element_text(size=15, family="sans", colour = "white", face = "bold"),
         plot.title   = element_text(size=20, family="sans", colour="black"),
         panel.border = element_rect(colour="grey60", linewidth = 0.5),
         panel.grid.minor = element_blank(),
@@ -52,7 +52,8 @@ theme_app <- theme_bw() +
         legend.position = "bottom",
         legend.direction = "horizontal",
         legend.text = element_text(size = 14),
-        legend.key.width = unit(1.5, "cm"))
+        legend.key.width = unit(1.5, "cm"),
+        strip.background = element_rect(fill = "#1F5A7A", colour = "#1F5A7A"))
 
 # Apply it app-wide
 theme_set(theme_app)

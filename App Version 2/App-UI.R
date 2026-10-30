@@ -9,10 +9,27 @@ card_box <- function(...) {
       border-radius: 8px;
       padding: 12px;
       margin-bottom: 10px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.08); ",
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15); ",
     ...
   )
 }
+
+title_card <- function(title, subtitle) {
+  div(style = "
+      background:#f8f9fa;
+      border:1px solid #dee2e6;
+      border-left:4px solid #1F5A7A;
+      border-radius:8px;
+      padding:12px;
+      margin-top:10px;
+      margin-bottom:15px;
+    ",
+    
+    h3(title, style = "margin-top:0; margin-bottom:5px;"),
+    p(subtitle, style = "margin-bottom:0;")
+  )
+}
+
 ############################################################################# 
 # User interface
 ############################################################################
@@ -20,41 +37,79 @@ ui <- fluidPage(
   tags$head(tags$style(HTML("
   .nav-link.active {
   font-weight: 700 !important;
-  font-size: 1.05em;}"))),
+  font-size: 1.05em;}
+  .nav-pills .nav-link {
+  color: #1F5A7A !important;
+  }
+  .nav-pills .nav-link:hover {
+  background-color: #eef4f7;
+  }
+  .nav-pills .nav-link.active {
+  background-color: #1F5A7A !important;
+  color: white !important;
+  }"))),
+  
   theme = bs_theme(version = 5, bootswatch = "flatly", primary = "#1F5A7A",
                    secondary = "#6C757D", success = "#4C956C"),
-  titlePanel("Expert Elicitation Application"),
+  
+  div(style = "
+    background-color: #f5f5f5;
+    border:1px solid #dee2e6;
+    border-radius:8px;
+    padding:15px;
+    margin-bottom:15px;
+    margin-top:15px;
+  ",
+    
+    h2("Expert Elicitation Application",
+       style = "margin-top:0; margin-bottom:5px;"),
+    
+    p(class = "text-muted",
+      "Visualize expert estimates, pooled distributions, and elicitation results.",
+      style = "margin-bottom:0;")),
+  
   sidebarLayout(sidebarPanel(width=3,
     conditionalPanel(
-      condition = "input.main_tab == 'Expert Estimates'", 
-      card_box(h5(icon("database"),strong("Data")),
-               radioButtons("data_source", "Data source",
-                            choices = c("Demo data" = "demo",
-                                        "Upload CSV" = "csv",
-                                        "Google Sheets" = "google"), 
-                            selected = "demo"),
-               conditionalPanel(condition = "input.data_source == 'csv'",
-                                fileInput("csv_file", "Upload Expert Responses",
-                                          accept = c(".csv", "text/csv")),
-                                downloadButton("download_template",
-                                               "Download Response Template",
-                                               class = "btn-default btn-sm")),
-               conditionalPanel(condition = "input.data_source == 'google'",
-                                actionButton("refresh_sheet",
-                                             "Get Latest Expert Responses",
-                                             class = "btn-success")))),
+      condition = "input.main_tab == 'expert'",
+      card_box(tags$details(
+        open = TRUE,
+        tags$summary(style = "cursor:pointer; font-weight:600; 
+                     font-size:18px; user-select:none;",
+                     icon("database"), " Data"),
+        br(),
+        radioButtons("data_source", "Data source",
+                     choices = c("Demo data" = "demo",
+                                 "Upload CSV" = "csv",
+                                 "Google Sheets" = "google"),
+                     selected = "demo"),
+        conditionalPanel(condition = "input.data_source == 'csv'",
+                         fileInput("csv_file", "Upload Expert Responses",
+                                   accept = c(".csv", "text/csv")),
+                         downloadButton("download_template",
+                                        "Download Response Template",
+                                        class = "btn-default btn-sm")),
+        conditionalPanel(condition = "input.data_source == 'google'",
+                         actionButton("refresh_sheet",
+                                      "Get Latest Expert Responses",
+                                      class = "btn-success"))))),
     # ============================================================
     # QUESTIONS
     # ============================================================
-    card_box(h5(icon("list-check"), strong("Questions")),
-    uiOutput("question_filter_ui"),
-    uiOutput("round_filter_ui")),
+    card_box(tags$details(open = TRUE,
+        tags$summary(
+          style = "cursor:pointer; font-weight:600; 
+          font-size:18px; user-select:none;",
+          icon("list-check"), " Questions"),
+        br(),
+        uiOutput("question_filter_ui"),
+        uiOutput("round_filter_ui"))),
     
     # ============================================================
     # ANALYSIS OPTIONS
     # ============================================================
     card_box(tags$details(tags$summary(
-          style = "cursor: pointer; font-weight: 600; font-size: 18px;",
+          style = "cursor: pointer; font-weight: 600; 
+          font-size: 18px; user-select:none;",
           icon("sliders"), "Analysis Options"),
           br(),
           checkboxInput("show_individual",
@@ -63,7 +118,7 @@ ui <- fluidPage(
                         "Show assessment confidence-weighted mixture", TRUE),
           checkboxInput("show_beta", "Show Beta approximation", TRUE),
           tags$details(tags$summary(
-            style = "cursor: pointer; font-weight: 600;",
+            style = "cursor: pointer; font-weight: 600; user-select:none;",
             "Advanced analysis settings"),
           br(),
           numericInput("lambda", "PERT shape (lambda)",
@@ -79,19 +134,21 @@ ui <- fluidPage(
     # ============================================================
     # ADVANCED COLUMN MAPPING
     # ============================================================
-    conditionalPanel(condition = "input.main_tab == 'Expert Estimates'",
+    conditionalPanel(condition = "input.main_tab == 'expert'",
                      card_box(tags$details(tags$summary(
-      style = "cursor: pointer; font-weight: 600; font-size: 18px;",
+      style = "cursor: pointer; font-weight: 600; font-size: 18px; user-select:none;",
       icon("gear"),"Column Mapping"),
       br(),
       helpText(
         "Change these settings only if the input data columns are not detected correctly."),
       uiOutput("colmap_ui")))),
+    
     # ============================================================
     # DOWNLOADS
     # ============================================================
     card_box(tags$details(tags$summary(
-      style = "cursor: pointer; font-weight: 600; font-size: 18px;", icon("download"),"Downloads"),
+      style = "cursor: pointer; font-weight: 600; 
+      font-size: 18px; user-select:none;", icon("download"),"Downloads"),
       tags$strong("Individual plots"),
       br(),
       fluidRow(column(6,downloadButton("download_participants_png",
@@ -119,46 +176,37 @@ ui <- fluidPage(
         downloadButton("download_report_html", "Facilitator Report (HTML)",
                        class = "btn-default btn-sm")))),
     
+  ############################################################################
+  # main panel
+  ############################################################################
     mainPanel(width=9,
       tabsetPanel(id = "main_tab",type="pills",
-        tabPanel("Expert Estimates",
-          br(),
-          h3("Individual Expert Estimates"),
-          helpText(
-            "Lowest plausible, best guess, and highest plausible estimates provided by each expert."),
+        tabPanel(tagList(icon("users"),"Expert Estimates"), value='expert',
+          title_card("Individual Expert Estimates",
+                     "Lowest plausible, best guess, and highest plausible estimates provided by each expert."),
           plotOutput("plot_participants",height = "600px")),
         
-        tabPanel("Pooled Distributions",
-          br(),
-          h3("Pooled Expert Distributions"),
-          helpText(
-            paste(
-              "PERT distributions derived from expert LPP, BGP, and HPP estimates.",
-              "Use the sidebar options to display individual expert distributions,",
-              "Assessment confidence weighting, and Beta approximations.")),
+        tabPanel(tagList(icon("chart-area"),"Pooled Distributions"),
+                 title_card("Pooled Expert Distributions",
+                            paste("PERT distributions derived from expert LPP, BGP, and HPP estimates.",
+                            "Use the sidebar options to display individual expert distributions,",
+                            "Assessment confidence weighting, and Beta approximations.")),
           plotOutput("plot_density",height = "600px")),
         
-        tabPanel("Simulated Pooled Estimates",
-          br(),
-          h3("Simulated Pooled Estimates"),
-          helpText("Monte Carlo draws from the pooled expert distributions."),
+        tabPanel(tagList(icon("chart-bar"),"Simulated Pooled Estimates"),
+                 title_card("Simulated Pooled Estimates",
+                            "Monte Carlo draws from the pooled expert distributions."),
           plotOutput("plot_hist",height = "600px")),
         
-        tabPanel("CDF",
-          br(),
-          h3("Cumulative Probability"),
-          helpText(
-            "Cumulative distribution functions for the pooled expert judgments."),
+        tabPanel(tagList(icon("chart-line"),"CDF"),
+                 title_card("Cumulative Probability",
+                            "Cumulative distribution functions for the pooled expert judgments."),
           plotOutput("plot_cdf",height = "600px")),
         
-        tabPanel( "Summary",
-          br(),
-          h3("Elicitation Summary"),
-          helpText(
-            paste(
-              "Equal-weight and assessment confidence-weighted pooled estimates are shown separately.",
-              "For multi-round elicitations, changes represent Round 2 minus Round 1.")),
-          br(),
+        tabPanel(tagList(icon("clipboard-list"),"Summary"),
+                 title_card("Elicitation Summary",
+                            paste("Equal-weight and assessment confidence-weighted pooled estimates are shown separately.",
+                            "For multi-round elicitations, changes represent Round 2 minus Round 1.")),
           uiOutput("summary_dashboard"),
           tags$hr(),
           h4("Round Comparison"),
