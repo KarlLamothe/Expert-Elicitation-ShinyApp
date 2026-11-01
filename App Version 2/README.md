@@ -49,8 +49,10 @@ Version 2 supports:
 - generating automated facilitator reports;
 - producing executive summaries and key findings;
 - identifying facilitator warnings;
-- visualizing questions exhibiting the largest revision following discussion; and
-- visualizing questions exhibiting the greatest divergence in expert judgement.
+- visualizing questions exhibiting the largest revision following discussion;
+- visualizing questions exhibiting the greatest divergence in expert judgement;
+- supporting optional descriptive question text for elicitation questions; and
+- displaying elicitation question text within analysis panels for single-question selections.
 
 ## Getting Started: Running Version 2
 
@@ -72,7 +74,7 @@ Version 2 supports multiple methods for supplying expert elicitation responses. 
 
 Built-in demonstration data can be selected within the application to explore the available analyses and visualizations.
 
-The demonstration dataset includes multiple questions, participants, assessment confidence values, and two elicitation rounds.
+The demonstration dataset includes multiple elicitation questions, participant responses, assessment confidence values, and two elicitation rounds. Example questions illustrate expert agreement, disagreement, bimodal responses, uncertainty, and post-discussion revision of judgements.
 
 ### CSV Upload
 
@@ -116,12 +118,13 @@ A multi-round dataset contains fields corresponding to:
 
 ```text
 Question
+Question_Text
 Round
 Participant
 Lowest_Plausible_Pr
 Best_Guess_Pr
 Highest_Plausible_Pr
-Assessment_confidence
+Assessment_Confidence
 ```
 
 For example:
@@ -134,7 +137,11 @@ Question  Round  Participant  LPP   BGP   HPP   AC
 1         2      P2           0.35  0.55  0.75  75
 ```
 
+Question_Text is optional but recommended. When provided, the application displays the full elicitation question within analysis panels when a single question is selected. This helps ensure that visualizations, summaries, and exported results remain interpretable without requiring users to cross-reference question identifiers.
+
 The column-mapping controls within the application allow equivalent columns with different names to be assigned to the appropriate application variables.
+
+The application automatically attempts to detect Question, Question_Text, Participant, Assessment Confidence, and Round columns. These mappings can be changed manually if required.
 
 The Round column is optional. If no Round column is selected, the data are analyzed using the single-round workflow.
 
@@ -180,6 +187,16 @@ Participants are **not required to respond to every question or participate in e
 When invalid data are identified, the analysis is stopped and the application displays a validation message identifying the affected **Question, Round, and response row**. Participant identifiers are not displayed in validation messages.
 
 This allows problems in the source data to be corrected before analysis while avoiding the silent modification or reinterpretation of submitted expert judgements.
+
+### Question Design
+
+Questions should be structured around a clearly defined event, specified conditions, relevant spatial context, and an explicit time horizon. Where possible, questions should reference observable outcomes and avoid combining multiple uncertain events into a single assessment.
+
+For example:
+
+"Assuming current environmental and management conditions continue, what is the probability that the target population will increase by at least 20% relative to its 2025 abundance within the next 10 years across the assessment area?"
+
+Providing descriptive question text promotes consistent interpretation among participants and improves the transparency of elicitation results.
 
 ### Participant Identifiers
 
