@@ -1,21 +1,41 @@
-############################################################################# 
-# Choose a reasonable default for "Question" column if multiple exist
-############################################################################
+#############################################################################
+# Choose a reasonable default for Question identifier column
+#############################################################################
 best_question_col <- function(df) {
   cols <- names(df)
-  cand <- grep("^question(\\.{3}\\d+)?$", tolower(cols), value = TRUE)
+  
+  if ("Question" %in% cols) {
+    return("Question")
+  }
+  # Look for columns named Question, Question_ID, QuestionID, etc.
+  cand_idx <- grep("^question$|^question[_ ]?id$|^qid$|^q$", cols, ignore.case = TRUE)
+  
+  # Remove Question_Text and similar descriptive fields
+  if (length(cand_idx) > 0) {
+    cand <- cols[cand_idx]
+    cand <- cand[!grepl("text|description|label", cand,ignore.case = TRUE)]
+    
+  } else {
+    cand <- character(0)
+  }
+  
+  # No candidate found
   if (length(cand) == 0) {
-    cand <- grep("^q(uestion)?", tolower(cols), value = TRUE)
+    return("<none>")
   }
-  if (length(cand) <= 1) {
-    return(ifelse(length(cand) == 1, cand, "<none>"))
+  
+  # Only one candidate found
+  if (length(cand) == 1) {
+    return(cand)
   }
-  # Prefer the one with most non-missing + unique values
+  
+  # Multiple candidates:
+  # Prefer the one with the most populated and unique values
   score <- sapply(cand, function(cc) {
     v <- df[[cc]]
     sum(!is.na(v)) + 0.001 * length(unique(na.omit(v)))
   })
-  cand[order(score, decreasing = TRUE)][1]
+  cand[which.max(score)]
 }
 
 #############################################################################

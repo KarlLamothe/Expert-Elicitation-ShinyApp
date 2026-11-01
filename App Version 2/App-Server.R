@@ -30,9 +30,12 @@ server <- function(input, output, session) {
     })
   })
   
-  ###########################################################################
-  # RESPONSE TEMPLATE DOWNLOAD
-  ###########################################################################
+  ############################################################################
+  # Download response template
+  # Provides an example dataset illustrating the recommended structure for
+  # elicitation responses, including question identifiers, question text,
+  # rounds, participant estimates, and assessment confidence.
+  ############################################################################
   output$download_template <- downloadHandler(
     filename = function() {
       "expert_elicitation_response_template.csv"
@@ -40,14 +43,17 @@ server <- function(input, output, session) {
     content = function(file) {
       template <- data.frame(
         Question = c(1, 1, 1, 1),
+        Question_Text = rep(
+          "Assuming current environmental and management conditions continue, what is the probability that the target population will increase by at least 20% relative to its 2025 abundance within the next 10 years across the assessment area?",
+          4),
         Round = c(1, 1, 2, 2),
         Participant = c("P1", "P2", "P1", "P2"),
         Lowest_Plausible_Pr = c(0.20, 0.30, 0.25, 0.35),
         Best_Guess_Pr = c(0.40, 0.50, 0.50, 0.55),
         Highest_Plausible_Pr = c(0.60, 0.75, 0.70, 0.75),
-        Assessment_Confidence = c(70, 65, 85, 75)
-      )
-      write.csv(template, file, row.names = FALSE, na = "")},
+        Assessment_Confidence = c(70, 65, 85, 75))
+      write.csv(template, file, row.names = FALSE, na = "")
+    },
     contentType = "text/csv"
   )
   
@@ -124,46 +130,114 @@ server <- function(input, output, session) {
     NULL
   })
   
+  ############################################################################
+  # Selected Question Display
+  # Display the elicitation question above analysis outputs when a single
+  # question is selected. Question text is retrieved from the optional
+  # Question_Text column in the input dataset.
+  ############################################################################
+  # -------------------------------------------------------------------------
+  # Extract question text from input data
+  # -------------------------------------------------------------------------
+  selected_question_text <- reactive({
+    req(length(input$question_multi) == 1)
+    df <- raw_df()
+    if (!"Question_Text" %in% names(df)) {
+      return(NULL)
+    }
+    q_selected <- input$question_multi
+    txt <- df %>%
+      dplyr::filter(Question == q_selected) %>%
+      dplyr::pull(Question_Text) %>%
+      unique()
+    if (length(txt) == 0) {
+      return(NULL)
+    }
+    txt[1]
+  })
+  
+  # -------------------------------------------------------------------------
+  # Render question panels for analysis tabs
+  # -------------------------------------------------------------------------
+  question_panel_ui <- reactive({
+    req(length(input$question_multi) == 1)
+    txt <- selected_question_text()
+    if (is.null(txt)) {
+      return(NULL)
+    }
+    div(
+      style = "
+      background:#f8f9fa;
+      border-top: 4px solid #1F5A7A;
+      border-left:4px solid #1f5a7a;
+      border-right: 1px solid #dee2e6;
+      border-bottom: 1px solid #dee2e6;
+      padding:8px 12px;
+      border-radius:4px;
+      margin-bottom:12px;
+      font-size:0.9em;
+      width:85%;
+      line-height:1.5;",
+      tags$span(style = "font-weight:600;color:#1f5a7a;", strong("Question:")),
+      tags$span(style = "margin-left:6px;", txt))
+  })
+  
+  output$question_panel_expert  <- renderUI(question_panel_ui())
+  output$question_panel_density <- renderUI(question_panel_ui())
+  output$question_panel_hist    <- renderUI(question_panel_ui())
+  output$question_panel_cdf     <- renderUI(question_panel_ui())
+  output$question_panel_summary <- renderUI(question_panel_ui())
+  
   ###########################################################################
   # INPUT COLUMN MAPPING
-  # Automatically detects likely question, participant ID, elicitation,
-  # confidence, and round columns while allowing manual override.
+  # Automatically detects likely question identifiers, question text,
+  # participant identifiers, elicitation values, assessment confidence,
+  # and round columns while allowing manual override.
   ###########################################################################
   output$colmap_ui <- renderUI({
     req(raw_df())
     df <- raw_df()
     cols <- names(df)
     default_question <- best_question_col(df)
-    tagList(
-      selectInput("col_question", "Question column", choices = c("Question", cols),
-        selected = if (default_question %in% cols) default_question else "<none>"),
-      
-      selectInput("col_id", "Participant ID column", choices = cols,
-        selected = if ("Participant" %in% cols) "Participant" else cols[1]),
-      
-      selectInput("col_lpp", "Lowest plausible (LPP)", choices = cols,
-         selected = grep("Lowest|LPP", cols,ignore.case = TRUE, value = TRUE)[1]),
-      
-      selectInput("col_bgp", "Best guess (BGP)", choices = cols,
-        selected = grep("Best|BGP",cols, ignore.case = TRUE, value = TRUE)[1]),
-     
-      selectInput("col_hpp", "Highest plausible (HPP)", choices = cols,
-        selected = grep("Highest|HPP", cols, ignore.case = TRUE, value = TRUE)[1]),
-      
-      selectInput("col_AC", "Assessment confidence (AC; optional)", choices = c("<none>", cols),
-        selected = {hit <- grep( "Assessment.*Confidence|Confidence|Belief|DoB",
-                                 cols,ignore.case = TRUE, value = TRUE )
-          if (length(hit) > 0) hit[1] else "<none>"
-        }
-      ),
-      
-      selectInput("col_round", "Elicitation round (optional)", choices = c("<none>", cols),
-        selected = { hit <- grep("^Round$|Elicitation.*Round|Response.*Round",
-            cols,ignore.case = TRUE, value = TRUE)
-          if (length(hit) > 0) hit[1] else "<none>"
-        }
-      )
-    )
+    tagList(selectInput("col_question", "Question identifier column",
+                        choices = c("<none>", cols),
+                        selected = if (default_question %in% cols)
+                          default_question else "<none>"),
+            selectInput("col_question_text", "Question text column (optional)",
+                        choices = c("<none>", cols),
+                        selected = {
+                          hit <- grep("^Question_Text$|Question.*Text",
+                                      cols,ignore.case = TRUE, value = TRUE)
+                          if (length(hit) > 0) hit[1] else "<none>"
+                          }),
+            selectInput("col_id", "Participant identifier column",
+                        choices = cols,
+                        selected = if ("Participant" %in% cols)
+                          "Participant" else cols[1]),
+            selectInput("col_lpp", "Lowest plausible (LPP)",
+                        choices = cols, 
+                        selected = grep( "Lowest|LPP",cols,
+                                         ignore.case = TRUE, value = TRUE)[1]),
+            selectInput("col_bgp", "Best guess (BGP)",
+                        choices = cols,
+                        selected = grep("Best|BGP", cols, 
+                                        ignore.case = TRUE, value = TRUE)[1]),
+            selectInput("col_hpp","Highest plausible (HPP)",
+                        choices = cols,
+                        selected = grep("Highest|HPP",
+                                        cols, ignore.case = TRUE, value = TRUE)[1]),
+            selectInput("col_AC","Assessment confidence (AC; optional)",
+                        choices = c("<none>", cols),
+                        selected = {
+                          hit <- grep("Assessment.*Confidence|Confidence|Belief|DoB",
+                                      cols,ignore.case = TRUE, value = TRUE)
+                          if (length(hit) > 0) hit[1] else "<none>"}),
+            selectInput("col_round", "Elicitation round (optional)",
+                        choices = c("<none>", cols),
+                        selected = {
+                          hit <- grep("^Round$|Elicitation.*Round|Response.*Round",
+                                      cols, ignore.case = TRUE,value = TRUE)
+                          if (length(hit) > 0) hit[1] else "<none>"}))
   })
   
   ###########################################################################
@@ -909,6 +983,44 @@ server <- function(input, output, session) {
     }
   )
   
+  ############################################################################
+  # Dynamic Plot Layout
+  # When a single question is selected, reduce the plot container width to
+  # improve readability and avoid excessive horizontal whitespace. When
+  # multiple questions are displayed, plots expand to the full available width.
+  ############################################################################
+  plot_container_ui <- function(plot_id, height = "600px") {
+    single_q <- length(input$question_multi) == 1
+    div(style = if (single_q) {
+        "width:50%;"
+      } else {
+        "width:100%;"
+      },
+      plotOutput(plot_id, height = height)
+    )
+  }
+  
+  output$plot_participants_container <- renderUI({
+    plot_container_ui("plot_participants")
+  })
+  
+  output$plot_density_ui <- renderUI({
+    plot_container_ui("plot_density")
+  })
+  
+  output$plot_hist_ui <- renderUI({
+    plot_container_ui("plot_hist")
+  })
+  
+  output$plot_cdf_ui <- renderUI({
+    plot_container_ui("plot_cdf")
+  })
+  
+  ############################################################################
+  # Individual Expert Estimates Plot
+  # Displays lowest plausible, best guess, and highest plausible estimates
+  # for each participant, optionally filtered to a selected elicitation round.
+  ############################################################################
   output$plot_participants <- renderPlot({
     req(results())
     

@@ -1,92 +1,101 @@
-############################################################################# 
-# Demo dataset
 ############################################################################
-demo_df <- cbind.data.frame(
-  Question = rep(seq(1:8), each=6),
-  Participant = rep(c("P1","P2",'P3','P4','P5','P6'), 8),
-  Lowest_Plausible_Pr = c(0.14,0.17,0.25,0.17,0.16,0.25,0.54,0.37,0.40,0.51,
-                          0.56,0.45,0.24,0.26,0.22,0.35,0.29,0.20,0.03,0.06,
-                          0.01,0.04,0.01,0.02,0.34,0.29,0.31,0.36,0.29,0.38,
-                          0.51,0.51,0.54,0.55,0.56,0.49,0.31,0.32,0.31,0.31,
-                          0.25,0.25,0.03,0.20,0.16,0.06,0.11,0.09),
-  Best_Guess_Pr = c(0.23,0.28,0.30,0.23,0.26,0.32,0.64,0.43,0.44,0.62,0.65,
-                    0.49,0.36,0.35,0.35,0.42,0.38,0.26,0.18,0.12,0.11,0.12,
-                    0.08,0.16,0.44,0.36,0.47,0.43,0.45,0.53,0.61,0.60,0.63,
-                    0.63,0.62,0.62,0.46,0.40,0.39,0.39,0.40,0.38,0.13,0.32,
-                    0.24,0.14,0.16,0.16),
-  Highest_Plausible_Pr = c(0.30,0.36,0.41,0.34,0.34,0.43,0.71,0.52,0.51,0.66,
-                           0.75,0.56,0.48,0.45,0.39,0.52,0.45,0.36,0.34,0.25,
-                           0.22,0.26,0.26,0.22,0.49,0.47,0.62,0.55,0.51,0.67,
-                           0.71,0.67,0.73,0.70,0.71,0.75,0.49,0.47,0.46,0.49,
-                           0.47,0.54,0.22,0.38,0.33,0.26,0.27,0.30),
-  Assessment_Confidence = c(100, 0, 50, 30, 85, 79, 99, 84, 33, 24, 
-                       77, 100, 100, 74, 24, 28, 34, 65, 88, 19,
-                       100, 100, 100, 0, 45, 50, 66, 99, 34,
-                       33, 22, 56, 98, 93, 100, 100, 100, 34, 25,
-                       45, 34, 26, 89, 50, 50 , 50 , 23, 19))
+# Demonstration questions
+############################################################################
 
-# Existing demonstration data become Round 1
-demo_round1 <- demo_df
+question_texts <- c(
+  "Assuming current environmental and management conditions continue, what is the probability that the target population will increase by at least 20% relative to its 2025 abundance within the next 10 years across the assessment area?",
+  "Assuming current environmental and management conditions continue, what is the probability that the target population will decline by more than 30% relative to its 2025 abundance within the next 10 years across the assessment area?",
+  "Assuming current environmental and management conditions continue, what is the probability that suitable habitat will increase by at least 10% within the next 10 years across the assessment area?",
+  "Assuming current environmental and management conditions continue, what is the probability that the population will reach the recovery target within the next 20 years across the assessment area?")
+
+############################################################################
+# ROUND 1
+############################################################################
+
+demo_round1 <- data.frame(
+  Question = rep(1:4, each = 6),
+  Question_Text = rep(question_texts, each = 6),
+  Participant = rep(c("P1", "P2", "P3", "P4", "P5", "P6"), times = 4),
+  Lowest_Plausible_Pr = c(
+    # Q1 - strong agreement
+    0.30, 0.35, 0.32, 0.28, 0.34, 0.30,
+    # Q2 - bimodal
+    0.10, 0.15, 0.12, 0.60, 0.65, 0.55,
+    # Q3 - high uncertainty
+    0.05, 0.10, 0.01, 0.10, 0.15, 0.05,
+    # Q4 - disagreement likely to converge
+    0.20, 0.25, 0.30, 0.60, 0.55, 0.65),
+  
+  Best_Guess_Pr = c(
+    0.45, 0.50, 0.47, 0.42, 0.48, 0.46,
+    0.20, 0.25, 0.18, 0.75, 0.80, 0.70,
+    0.30, 0.35, 0.25, 0.40, 0.45, 0.30,
+    0.35, 0.40, 0.45, 0.75, 0.70, 0.80),
+  
+  Highest_Plausible_Pr = c(
+    0.60, 0.65, 0.62, 0.58, 0.64, 0.61,
+    0.40, 0.45, 0.35, 0.90, 0.95, 0.88,
+    0.75, 0.80, 0.70, 0.85, 0.90, 0.75,
+    0.60, 0.65, 0.70, 0.90, 0.88, 0.95),
+  
+  Assessment_Confidence = c(
+    # Q1 - confident
+    85, 90, 80, 88, 92, 87,
+    # Q2 - moderate confidence despite disagreement
+    70, 75, 72, 85, 88, 80,
+    # Q3 - low confidence
+    25, 35, 20, 30, 25, 40,
+    # Q4 - moderately confident
+    65, 70, 75, 78, 80, 72))
+
 demo_round1$Round <- 1
 
-# Create Round 2 from Round 1
-# These changes are for demonstration/testing purposes only and are designed
-# to represent plausible post-discussion revisions in expert judgements.
+############################################################################
+# ROUND 2
+############################################################################
 
-set.seed(123)
 demo_round2 <- demo_round1
 demo_round2$Round <- 2
 
-# Allow some experts to revise their best guesses after discussion
-bg_change <- sample(
-  c(-0.08, -0.05, -0.03, 0, 0, 0, 0.03, 0.05, 0.08),
-  nrow(demo_round2),
-  replace = TRUE)
+# Q1 - little change
+q1 <- demo_round2$Question == 1
+demo_round2$Best_Guess_Pr[q1] <-
+  demo_round2$Best_Guess_Pr[q1] + c(0.01, 0.00, 0.02, 0.01, 0.00, 0.01)
+demo_round2$Assessment_Confidence[q1] <-
+  pmin(demo_round2$Assessment_Confidence[q1] + 5, 100)
 
-demo_round2$Best_Guess_Pr <- pmin(
-  pmax(demo_round2$Best_Guess_Pr + bg_change, 0.01),
-  0.99)
+# Q2 - bimodal pattern persists but narrows slightly
+q2 <- demo_round2$Question == 2
+demo_round2$Best_Guess_Pr[q2] <- c(0.25, 0.30, 0.28, 0.65, 0.70, 0.62)
+demo_round2$Lowest_Plausible_Pr[q2] <- c(0.15, 0.20, 0.18, 0.50, 0.55, 0.48)
+demo_round2$Highest_Plausible_Pr[q2] <- c(0.45, 0.50, 0.42, 0.80, 0.85, 0.78)
+demo_round2$Assessment_Confidence[q2] <- c(80, 82, 78, 90, 92, 88)
 
-# Allow plausible bounds to shift somewhat between rounds
-lpp_change <- sample(
-  c(-0.05, -0.03, 0, 0, 0, 0.03, 0.05),
-  nrow(demo_round2),
-  replace = TRUE)
+# Q3 - confidence improves somewhat after discussion
+q3 <- demo_round2$Question == 3
+demo_round2$Assessment_Confidence[q3] <- c(45, 50, 40, 50, 45, 55)
+demo_round2$Lowest_Plausible_Pr[q3] <- c(0.10, 0.15, 0.08, 0.15, 0.20, 0.10)
+demo_round2$Highest_Plausible_Pr[q3] <- c(0.65, 0.70, 0.60, 0.75, 0.80, 0.65)
 
-hpp_change <- sample(
-  c(-0.05, -0.03, 0, 0, 0, 0.03, 0.05),
-  nrow(demo_round2),
-  replace = TRUE)
+# Q4 - strong convergence after discussion
+q4 <- demo_round2$Question == 4
+demo_round2$Best_Guess_Pr[q4] <- c(0.55, 0.57, 0.58, 0.60, 0.59, 0.61)
+demo_round2$Lowest_Plausible_Pr[q4] <- c(0.40, 0.42, 0.45, 0.48, 0.46, 0.50)
+demo_round2$Highest_Plausible_Pr[q4] <- c(0.68, 0.70, 0.72, 0.74, 0.73, 0.75)
+demo_round2$Assessment_Confidence[q4] <- c(85, 88, 90, 92, 90, 88)
 
-demo_round2$Lowest_Plausible_Pr <- pmin(
-  pmax(demo_round2$Lowest_Plausible_Pr + lpp_change, 0.01),
-  demo_round2$Best_Guess_Pr)
+############################################################################
+# COMBINE ROUNDS
+############################################################################
 
-demo_round2$Highest_Plausible_Pr <- pmax(
-  pmin(demo_round2$Highest_Plausible_Pr + hpp_change, 0.99),
-  demo_round2$Best_Guess_Pr)
-
-# Allow assessment confidence to change following discussion
-dob_change <- sample(
-  c(-15, -10, -5, 0, 0, 5, 10, 15),
-  nrow(demo_round2),
-  replace = TRUE)
-
-demo_round2$Assessment_Confidence <- pmin(
-  pmax(demo_round2$Assessment_Confidence + dob_change, 0),
-  100)
-
-# Combine both rounds
 demo_df <- rbind(demo_round1, demo_round2)
-
-# Put Round beside Question for readability
 demo_df <- demo_df[, c(
   "Question",
+  "Question_Text",
   "Round",
   "Participant",
   "Lowest_Plausible_Pr",
   "Best_Guess_Pr",
   "Highest_Plausible_Pr",
-  "Assessment_Confidence"
-)]
-
+  "Assessment_Confidence")]
+row.names(demo_df) <- NULL
