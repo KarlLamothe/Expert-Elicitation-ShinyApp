@@ -990,14 +990,13 @@ server <- function(input, output, session) {
   # multiple questions are displayed, plots expand to the full available width.
   ############################################################################
   plot_container_ui <- function(plot_id, height = "600px") {
-    single_q <- length(input$question_multi) == 1
-    div(style = if (single_q) {
+    n_questions <- length(unique(plot_results()$summaries$Question))
+    div(style = if (n_questions == 1) {
         "width:50%;"
       } else {
         "width:100%;"
       },
-      plotOutput(plot_id, height = height)
-    )
+      plotOutput(plot_id, height = height))
   }
   
   output$plot_participants_container <- renderUI({
