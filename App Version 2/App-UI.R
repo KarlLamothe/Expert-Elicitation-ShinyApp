@@ -81,7 +81,7 @@ ui <- fluidPage(
                                         class = "btn-default btn-sm"),
                          br(),
                          helpText(tags$small(tags$b("Note: "),
-                           "Question_Text is optional but recommended. When provided, the full question is displayed within the application when a single question is selected."))),
+                           "Question_Text is optional but recommended. When provided, the question is displayed within the application when a single question is selected."))),
         conditionalPanel(condition = "input.data_source == 'google'",
                          actionButton("refresh_sheet",
                                       "Get Latest Expert Responses",
@@ -180,7 +180,7 @@ ui <- fluidPage(
                title_card("Pooled Expert Distributions",
                           paste("PERT distributions derived from expert LPP, BGP, and HPP estimates.",
                             "Use the sidebar options to display individual expert distributions,",
-                            "Assessment confidence weighting, and Beta approximations.")),
+                            "assessment confidence weighting, and Beta approximations.")),
                uiOutput("question_panel_density"),
                uiOutput("plot_density_ui")),
       
@@ -220,13 +220,8 @@ ui <- fluidPage(
                 tags$b("Equal-weight mean: "),
                 "Pooled estimate when all experts contribute equally."),
                 tags$li(tags$b("Assessment confidence: "),
-                        paste(
-                "A participant's self-reported confidence in the probability assessment",
-                "provided for a question, considering the available evidence, relevant",
-                "expertise, assumptions, and remaining uncertainty. Assessment confidence",
-                "is separate from the uncertainty represented by the lowest and highest",
-                "plausible probabilities.")),
-                
+                        paste("A participant's self-reported confidence in the probability assessment.")),
+
                 tags$li(tags$b(
                   "Confidence-weighted mean: "),
                   paste("The pooled estimate obtained when participants' relative contributions",
