@@ -84,8 +84,8 @@ ui <- fluidPage(
                            "Question_Text is optional but recommended. When provided, the question is displayed within the application when a single question is selected."))),
         conditionalPanel(condition = "input.data_source == 'google'",
                          actionButton("refresh_sheet",
-                                      "Get Latest Expert Responses",
-                                      class = "btn-success"))))),
+                                      strong("Get Latest Expert Responses"),
+                                      class = "btn-primary btn-sm"))))),
     
     # ============================================================
     # QUESTIONS
