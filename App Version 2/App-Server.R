@@ -479,6 +479,23 @@ server <- function(input, output, session) {
       # Preserve the original structure
       # ==============================================================
       summary_all <- bind_rows(lapply(res_list, `[[`, "summary"))
+      
+      # Add question text
+      if (!is.null(input$col_question_text) &&
+          !identical(input$col_question_text, "<none>")) {
+        
+        question_lookup <- df %>%
+          distinct(
+            Question = .data[[q_col]],
+            Question_Text = .data[[input$col_question_text]]
+          ) %>%
+          mutate(Question = as.character(Question))
+        
+        summary_all <- summary_all %>%
+          left_join(question_lookup, by = "Question") %>%
+          relocate(Question_Text, .after = Question)
+      }
+      
       dens_mix_all <- bind_rows(
         lapply(res_list, function(r) r$facet$mixture))
       dens_mix_w_all <- bind_rows(
@@ -521,6 +538,22 @@ server <- function(input, output, session) {
             }))
         })
       )
+      
+      # Add question text
+      if (!is.null(input$col_question_text) &&
+          !identical(input$col_question_text, "<none>")) {
+        
+        question_lookup <- df %>%
+          distinct(
+            Question = .data[[q_col]],
+            Question_Text = .data[[input$col_question_text]]
+          ) %>%
+          mutate(Question = as.character(Question))
+        
+        summary_all <- summary_all %>%
+          left_join(question_lookup, by = "Question") %>%
+          relocate(Question_Text, .after = Question)
+      }
       
       dens_mix_all <- bind_rows(
         lapply(names(res_list), function(q) {

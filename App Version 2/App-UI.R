@@ -101,13 +101,18 @@ ui <- fluidPage(
     # ============================================================
     # ANALYSIS OPTIONS
     # ============================================================
+    conditionalPanel(condition = "input.main_tab != 'expert' &&
+    input.main_tab != 'summary'",
     card_box(tags$details(
+      open = TRUE,
       tags$summary(
       style = "cursor: pointer; font-weight: 600; 
       font-size: 18px; user-select:none;",
       icon("sliders"), "Analysis Options"),
       br(),
-      checkboxInput("show_individual","Show individual expert curves", TRUE),
+      conditionalPanel(condition = "input.main_tab != 'hist'",
+                       checkboxInput("show_individual",
+                                     "Show individual expert curves", TRUE)),
       checkboxInput("show_AC_mix",
                     "Show assessment confidence-weighted mixture", TRUE),
       checkboxInput("show_beta", "Show Beta approximation", TRUE),
@@ -116,12 +121,7 @@ ui <- fluidPage(
         "Advanced analysis settings"),
         br(),
         numericInput("lambda", "PERT shape (lambda)", value = 4, min = 1, step = 1),
-        numericInput("Nsim", "Mixture draws", value = 10000, min = 1000, step = 1000)))),
-    
-    actionButton("run", icon = icon("play"), "Run / Refresh Analysis",
-                 class = "btn-primary btn-lg", width = "100%"),
-    br(),  
-    br(),  
+        numericInput("Nsim", "Mixture draws", value = 10000, min = 1000, step = 1000))))),
     
     # ============================================================
     # ADVANCED COLUMN MAPPING
@@ -166,7 +166,13 @@ ui <- fluidPage(
       downloadButton("download_all_plots_zip", "Analysis Outputs (ZIP)",
                      class = "btn-default btn-sm"),
       downloadButton("download_report_html", "Facilitator Report (HTML)",
-                     class = "btn-default btn-sm")))),
+                     class = "btn-default btn-sm"))),
+    
+    
+    actionButton("run", icon = icon("play"), "Run / Refresh Analysis",
+                 class = "btn-primary btn-lg", width = "100%"),
+    br(),  
+    br()),
     
     ############################################################################
     ############################################################################
@@ -190,6 +196,7 @@ ui <- fluidPage(
                uiOutput("plot_density_ui")),
       
       tabPanel(tagList(icon("chart-bar"),"Simulated Pooled Estimates"),
+               value="hist",
                title_card("Simulated Pooled Estimates",
                           "Monte Carlo draws from the pooled expert distributions."),
                uiOutput("question_panel_hist"),
@@ -202,6 +209,7 @@ ui <- fluidPage(
                uiOutput("plot_cdf_ui")),
       
       tabPanel(tagList(icon("clipboard-list"),"Summary"),
+               value="summary",
                title_card("Elicitation Summary",
                           paste("Equal-weight and assessment confidence-weighted pooled estimates are shown separately.",
                                 "For multi-round elicitations, changes represent Round 2 minus Round 1.")),
