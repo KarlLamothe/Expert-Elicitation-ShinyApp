@@ -191,7 +191,7 @@ ui <- fluidPage(
                title_card("Pooled Expert Distributions",
                           paste("PERT distributions derived from expert LPP, BGP, and HPP estimates.",
                             "Use the sidebar options to display individual expert distributions,",
-                            "assessment confidence weighting, and Beta approximations.")),
+                            "assessment confidence (AC) weighting, and Beta approximations.")),
                uiOutput("question_panel_density"),
                uiOutput("plot_density_ui")),
       
