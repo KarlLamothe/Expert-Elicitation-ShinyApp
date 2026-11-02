@@ -158,10 +158,21 @@ ui <- fluidPage(
       downloadButton("download_all_plots_zip", "Analysis Outputs (ZIP)", width="100%"),
       tags$div(style = "margin-bottom: 6px;"),
       downloadButton("download_report_html", "Facilitator Report (HTML)", width="100%"))),
-    br(),
     actionButton("run", icon = icon("play"), "Run / Refresh Analysis",
                  class = "btn-primary btn-lg", width = "100%"),
-    br()),
+    br(),
+    div(style = "color: #6c757d;
+    font-size: 12px;
+    border-top:1px solid #dee2e6;
+    margin-top:20px;
+    padding-top:12px;
+    padding-bottom:12px;",
+        tags$strong("Expert Elicitation Application"),
+        tags$br(),
+        "Developed by Karl Lamothe, Fisheries and Oceans Canada",
+        tags$br(),
+        "Version 2.2.0",
+        " | Last updated: November 2026")),
     
     ############################################################################
     ############################################################################
