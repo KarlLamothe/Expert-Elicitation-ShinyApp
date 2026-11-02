@@ -280,6 +280,9 @@ server <- function(input, output, session) {
   ###########################################################################
   results <- eventReactive(input$run, {
     df <- raw_df()
+    
+    validate(need(!is.null(df), "No data available. Please upload data or select a data source."))
+    
     req(input$col_id, input$col_lpp, input$col_bgp, input$col_hpp)
     
     # Attach a question column if none provided
@@ -1027,12 +1030,13 @@ server <- function(input, output, session) {
   # Individual Expert Estimates Plot
   # Displays lowest plausible, best guess, and highest plausible estimates
   # for each participant, optionally filtered to a selected elicitation round.
-  ############################################################################
+  ###########################################################################
+  
   output$plot_participants <- renderPlot({
     req(results())
     
     df_plot <- raw_df()
-    
+
     if (!is.null(input$round_filter) &&
         input$round_filter != "All" &&
         !is.null(input$col_round) &&
