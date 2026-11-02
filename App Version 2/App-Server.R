@@ -479,23 +479,6 @@ server <- function(input, output, session) {
       # Preserve the original structure
       # ==============================================================
       summary_all <- bind_rows(lapply(res_list, `[[`, "summary"))
-      
-      # Add question text
-      if (!is.null(input$col_question_text) &&
-          !identical(input$col_question_text, "<none>")) {
-        
-        question_lookup <- df %>%
-          distinct(
-            Question = .data[[q_col]],
-            Question_Text = .data[[input$col_question_text]]
-          ) %>%
-          mutate(Question = as.character(Question))
-        
-        summary_all <- summary_all %>%
-          left_join(question_lookup, by = "Question") %>%
-          relocate(Question_Text, .after = Question)
-      }
-      
       dens_mix_all <- bind_rows(
         lapply(res_list, function(r) r$facet$mixture))
       dens_mix_w_all <- bind_rows(
@@ -538,23 +521,7 @@ server <- function(input, output, session) {
             }))
         })
       )
-      
-      # Add question text
-      if (!is.null(input$col_question_text) &&
-          !identical(input$col_question_text, "<none>")) {
-        
-        question_lookup <- df %>%
-          distinct(
-            Question = .data[[q_col]],
-            Question_Text = .data[[input$col_question_text]]
-          ) %>%
-          mutate(Question = as.character(Question))
-        
-        summary_all <- summary_all %>%
-          left_join(question_lookup, by = "Question") %>%
-          relocate(Question_Text, .after = Question)
-      }
-      
+
       dens_mix_all <- bind_rows(
         lapply(names(res_list), function(q) {
           bind_rows(lapply(names(res_list[[q]]), function(rnd) {
@@ -1022,14 +989,22 @@ server <- function(input, output, session) {
   # improve readability and avoid excessive horizontal whitespace. When
   # multiple questions are displayed, plots expand to the full available width.
   ############################################################################
-  plot_container_ui <- function(plot_id, height = "600px") {
+  plot_container_ui <- function(plot_id) {
     n_questions <- length(unique(plot_results()$summaries$Question))
-    div(style = if (n_questions == 1) {
-        "width:50%;"
-      } else {
-        "width:100%;"
-      },
-      plotOutput(plot_id, height = height))
+    single_round_view <-
+      !is.null(input$round_filter) &&
+      input$round_filter != "All"
+    width_style <- if (n_questions == 1) {
+      "width:35%;"
+    } else {
+      "width:100%;"
+    }
+    height <- if (single_round_view) {
+      "400px"
+    } else {
+      "650px"
+    }
+    div(style = width_style, plotOutput(plot_id, height = height))
   }
   
   output$plot_participants_container <- renderUI({
@@ -1315,15 +1290,29 @@ server <- function(input, output, session) {
   
   # Summary table & download
   output$summary_table <- renderTable({
-    req(results())
-    results()$summaries
+    req(plot_results())
+    plot_results()$summaries
   })
   
   output$download_summary <- downloadHandler(
-    filename = function() paste0("elicitation_summaries_", format(Sys.time(), "%Y%m%d_%H%M"),".csv"),
+    filename = function() {
+      paste0("elicitation_summaries_", format(Sys.time(), "%Y%m%d_%H%M"), ".csv")
+    },
+    
     content = function(file) {
-      req(results())
-      readr::write_csv(results()$summaries, file)
+      out <- results()$summaries
+      if (!is.null(input$col_question_text) &&
+          !identical(input$col_question_text, "<none>")) {
+        question_lookup <- raw_df() %>%
+          distinct(Question = as.character(.data[[input$col_question]]),
+                   Question_Text = .data[[input$col_question_text]])
+        
+        out <- out %>%
+          mutate(Question = as.character(Question)) %>%
+          left_join(question_lookup, by = "Question") %>%
+          relocate(Question_Text, .after = Question)
+      }
+      readr::write_csv(out, file)
     }
   )
   
