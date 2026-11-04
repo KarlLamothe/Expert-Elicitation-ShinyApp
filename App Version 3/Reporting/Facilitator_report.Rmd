@@ -1,0 +1,322 @@
+---
+title: "Expert Elicitation Facilitator Report"
+author: "Expert Elicitation Application"
+output:
+  html_document:
+    toc: true
+  pdf_document:
+    toc: true
+params:
+  report_data: NULL
+---
+
+This report summarizes the results of a structured expert elicitation exercise and provides diagnostic summaries to support interpretation of elicited judgements, assessment confidence, and multi-round elicitation outcomes.
+
+**Generated:** `r params$report_data$metadata$generated`
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+report_data <- params$report_data
+```
+
+```{r css, echo=FALSE, results='asis'}
+cat("
+<style>
+
+body {
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+h1 {
+  margin-top: 50px;
+  margin-bottom: 15px;
+  font-size: 32px;
+}
+
+h2 {
+  margin-top: 30px;
+  margin-bottom: 10px;
+  font-size: 24px;
+}
+
+.table {
+  margin-bottom: 25px;
+  font-size: 15px;
+}
+
+.main-container {
+  max-width: 1000px;
+}
+
+.key-findings-box {
+  background-color: #f8f9fa;
+  border-left: 6px solid #1F5A7A;
+  padding: 15px;
+  margin-top: 10px;
+  margin-bottom: 25px;
+  border-radius: 4px;
+}
+
+.key-findings-title {
+  font-weight: 700;
+  font-size: 18px;
+  margin-bottom: 10px;
+}
+
+</style>
+")
+```
+
+# Executive Summary
+
+The following summary highlights key patterns identified in the elicitation results.
+
+```{r, results='asis'}
+cat(generate_executive_summary(report_data))
+```
+
+
+```{r, results='asis'}
+
+cat("<div class='key-findings-box'>")
+
+cat("<div class='key-findings-title'>Key Findings</div>")
+
+cat("<ul>")
+
+cat(
+  paste0(
+    "<li>",
+    generate_revision_narrative(report_data),
+    "</li>"
+  )
+)
+
+cat(
+  paste0(
+    "<li>",
+    generate_high_confidence_narrative(report_data),
+    "</li>"
+  )
+)
+
+cat(
+  paste0(
+    "<li>",
+    generate_low_confidence_narrative(report_data),
+    "</li>"
+  )
+)
+
+cat(
+  paste0(
+    "<li>",
+    generate_acw_effect_narrative(report_data),
+    "</li>"
+  )
+)
+
+cat(
+  paste0(
+    "<li>",
+    generate_ac_change_narrative(report_data),
+    "</li>"
+  )
+)
+
+cat(
+  paste0(
+    "<li>",
+    generate_stability_narrative(report_data),
+    "</li>"
+  )
+)
+
+cat(
+  paste0(
+    "<li>",
+    generate_spread_narrative(report_data),
+    "</li>"
+  )
+)
+
+cat(
+  paste0(
+    "<li>",
+    generate_participation_narrative(report_data),
+    "</li>"
+  )
+)
+
+cat("</ul>")
+cat("</div>")
+
+```
+
+# Facilitator Warnings
+
+The following observations may warrant additional discussion or review.
+
+```{r, results='asis'}
+warnings <- generate_warnings(report_data)
+if(length(warnings) == 1 &&
+  warnings == "No notable facilitator warnings were identified.") {
+  cat(warnings)
+} else {
+  for(w in warnings){
+    cat(paste0("- ⚠ ", w, "\n"))
+  }
+}
+```
+
+# Participation Summary
+
+```{r}
+report_data$participation %>%
+  kbl() %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"),
+    full_width = FALSE,position = "left")
+```
+
+# Question Summary
+
+The table below summarizes all elicitation questions.
+
+```{r}
+report_data$summary %>%
+  select(Question, Round, EqW_Mean, ACW_Mean, Mean_AC, N_Participants) %>%
+  kbl(digits = 3) %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"),
+                full_width = FALSE, position = "left")
+```
+
+# Revision Following Discussion
+
+The table below summarizes differences in equal-weight means between rounds.
+
+```{r}
+if(!is.null(report_data$revision)){
+  report_data$revision %>%
+    select(Question, `1`, `2`, Revision) %>%
+    rename(`Round 1` = `1`,`Round 2` = `2`) %>%
+    kbl(digits = 3) %>%
+    kable_styling(bootstrap_options = c("striped", "hover", "condensed"),
+                  full_width = FALSE, position = "left")
+} else {
+  knitr::asis_output("This diagnostic is only available when multiple elicitation rounds are analyzed.")
+}
+
+```
+
+# Largest Revision Following Discussion
+
+```{r}
+if(!is.null(report_data$revision)){
+  build_revision_plot(report_data)
+} else {
+  knitr::asis_output(
+    "Revision visualizations are only available for multi-round elicitation exercises.")
+}
+```
+
+*Figure. Equal-weight pooled distributions for the question exhibiting the greatest revision following discussion. The distributions represent Round 1 and Round 2 estimates separately, allowing the effect of discussion on the pooled judgement to be visualized.*
+
+
+# Stability Following Discussion
+
+The table below identifies questions exhibiting the smallest changes in mean equal-weight estimates between rounds.
+
+```{r}
+if(!is.null(report_data$stability)){
+  report_data$stability %>%
+    select(Question, `1`, `2`, Revision) %>%
+    rename(`Round 1` = `1`,`Round 2` = `2`) %>%
+    kbl(digits = 3) %>%
+    kable_styling(bootstrap_options = c("striped","hover","condensed"),
+                  full_width = FALSE, position = "left")
+} else {
+  knitr::asis_output("This diagnostic is only available when multiple elicitation rounds are analyzed.")
+}
+```
+
+# Assessment Confidence Weighting Effects
+
+The table below ranks questions by assessment confidence weighted effects.
+
+```{r}
+acw_tbl <- report_data$summary %>%
+  select(Question,Round, EqW_Mean, ACW_Mean, ACW_Effect ) %>%
+  arrange(desc(abs(ACW_Effect)))
+acw_tbl %>%
+  kbl(digits = 3) %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"),
+                full_width = FALSE, position = "left")
+```
+
+# Assessment Confidence Summary
+
+The table below summarizes participant assessment confidence for each question.
+
+```{r}
+report_data$summary %>%
+  select(Question, Round, Mean_AC, Min_AC, Max_AC) %>%
+  kbl(digits = 3) %>%
+  kable_styling(bootstrap_options = c("striped","hover","condensed"),
+                full_width = FALSE, position = "left")
+```
+
+# Assessment Confidence Change
+
+The table below summarizes changes in mean assessment confidence between rounds.
+
+```{r}
+if(!is.null(report_data$ac_change)){
+  report_data$ac_change %>%
+    select(Question, `1`, `2`, AC_Change) %>%
+    rename(`Round 1` = `1`,`Round 2` = `2`) %>%
+    kbl(digits = 3) %>%
+    kable_styling(bootstrap_options = c("striped","hover","condensed"),
+                  full_width = FALSE, position = "left")
+} else {
+  knitr::asis_output("This diagnostic is only available when multiple elicitation rounds are analyzed.")
+}
+```
+
+# Variation in Expert Judgement
+
+The table below ranks questions according to the spread of the equal-weight pooled distribution.
+
+```{r}
+report_data$spread %>%
+  select(Question, Round, EqW_5th, EqW_95th, Spread) %>%
+  kbl(digits = 3) %>%
+  kable_styling(bootstrap_options = c("striped","hover","condensed"),
+                full_width = FALSE, position = "left")
+```
+
+# Greatest Spread in Expert Judgement
+
+```{r}
+top_div <- report_data$spread %>%
+  slice(1)
+build_spread_plot(report_data)
+```
+
+*Figure. Individual expert distributions (grey), the equal-weight pooled distribution (black), and the assessment confidence-weighted pooled distribution (orange) for the question exhibiting the greatest distribution spread.*
+
+# Incomplete Participation
+
+The table below summarizes participant retention for each question.
+
+```{r}
+if(!is.null(report_data$participation_change)){
+  report_data$participation_change %>%
+    select(Question, `1`, `2`,Participation_Retention) %>%
+    rename(`Round 1` = `1`,`Round 2` = `2`) %>%
+    kbl(digits = 3) %>%
+    kable_styling(bootstrap_options = c("striped", "hover","condensed"),
+                  full_width = FALSE, position = "left")
+  } else {
+    knitr::asis_output("This diagnostic is only available when multiple elicitation rounds are analyzed.")
+}

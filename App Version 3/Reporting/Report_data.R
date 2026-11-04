@@ -1,0 +1,48 @@
+# Reporting/Report_data.R
+
+build_report_data <- function(results_obj){
+  summary_tbl <- results_obj$summaries
+  
+  n_questions <- length(unique(summary_tbl$Question))
+  
+  n_rounds <- if ("Round" %in% names(summary_tbl)) {
+    length(unique(summary_tbl$Round))
+  } else {
+    1
+  }
+  
+  participation <- tibble::tibble(
+    Metric = c(
+      "Questions",
+      "Rounds",
+      "Mean Participants",
+      "Mean AC Response Rate"
+    ),
+    Value = c(
+      n_questions,
+      n_rounds,
+      round(mean(summary_tbl$N_Participants), 1),
+      round(mean(summary_tbl$AC_Response_Rate, na.rm = TRUE) * 100, 1)
+    )
+  )
+  
+  revision_tbl <- calculate_revision_summary(summary_tbl)
+  ac_change_tbl <- calculate_ac_change_summary(summary_tbl)
+  stability_tbl <- calculate_stability_summary(summary_tbl)
+  spread_tbl <- calculate_spread_summary(summary_tbl)
+  participation_change_tbl <- calculate_participation_summary(summary_tbl)
+  list(
+    metadata = list(
+      generated = format(Sys.time(), "%Y-%m-%d %H:%M"),
+      app_version = "2.0"
+    ),
+    participation = participation,
+    summary = summary_tbl,
+    revision = revision_tbl,
+    stability = stability_tbl,
+    ac_change = ac_change_tbl,
+    spread = spread_tbl,
+    participation_change = participation_change_tbl,
+    results = results_obj
+  )
+}

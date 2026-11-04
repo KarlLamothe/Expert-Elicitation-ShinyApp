@@ -1,0 +1,332 @@
+#############################################################################
+# Choose a reasonable default for Question identifier column
+#############################################################################
+best_question_col <- function(df) {
+  cols <- names(df)
+  
+  if ("Question" %in% cols) {
+    return("Question")
+  }
+  # Look for columns named Question, Question_ID, QuestionID, etc.
+  cand_idx <- grep("^question$|^question[_ ]?id$|^qid$|^q$", cols, ignore.case = TRUE)
+  
+  # Remove Question_Text and similar descriptive fields
+  if (length(cand_idx) > 0) {
+    cand <- cols[cand_idx]
+    cand <- cand[!grepl("text|description|label", cand,ignore.case = TRUE)]
+    
+  } else {
+    cand <- character(0)
+  }
+  
+  # No candidate found
+  if (length(cand) == 0) {
+    return("<none>")
+  }
+  
+  # Only one candidate found
+  if (length(cand) == 1) {
+    return(cand)
+  }
+  
+  # Multiple candidates:
+  # Prefer the one with the most populated and unique values
+  score <- sapply(cand, function(cc) {
+    v <- df[[cc]]
+    sum(!is.na(v)) + 0.001 * length(unique(na.omit(v)))
+  })
+  cand[which.max(score)]
+}
+
+#############################################################################
+# Validate expert elicitation input data
+#############################################################################
+
+validate_elicitation_data <- function(df, id_col, question_col, lpp_col,
+                                      bgp_col, hpp_col, AC_col = NULL,
+                                      round_col = NULL) {
+  problems <- character(0)
+  # -------------------------------------------------------------------------
+  # Extract and standardize mapped columns
+  # -------------------------------------------------------------------------
+  check_df <- data.frame(
+    Question = df[[question_col]],
+    Question_Type = if ("Question_Type" %in% names(df)) {
+      df$Question_Type
+    } else {
+      "probability"
+    },
+    Participant = df[[id_col]],
+    LPP = suppressWarnings(as.numeric(df[[lpp_col]])),
+    BGP = suppressWarnings(as.numeric(df[[bgp_col]])),
+    HPP = suppressWarnings(as.numeric(df[[hpp_col]])),
+    stringsAsFactors = FALSE)
+  
+  # Optional Assessment Confidence
+  if (!is.null(AC_col) &&
+      !identical(AC_col, "<none>") &&
+      AC_col %in% names(df)) {
+    check_df$AC_raw <- df[[AC_col]]
+    check_df$AC <- suppressWarnings(as.numeric(df[[AC_col]]))
+  } else {
+    check_df$AC_raw <- NA
+    check_df$AC <- NA_real_
+  }
+  
+  # Optional Round
+  if (!is.null(round_col) &&
+      !identical(round_col, "<none>") &&
+      round_col %in% names(df)) {
+    check_df$Round <- df[[round_col]]
+  } else {
+    check_df$Round <- 1
+  }
+  
+  # Preserve original probability values so we can distinguish
+  # missing values from non-numeric entries
+  check_df$LPP_raw <- df[[lpp_col]]
+  check_df$BGP_raw <- df[[bgp_col]]
+  check_df$HPP_raw <- df[[hpp_col]]
+  
+  # -------------------------------------------------------------------------
+  # Helper for readable response identifiers
+  # -------------------------------------------------------------------------
+  
+  response_label <- function(i) {
+    q <- as.character(check_df$Question[i])
+    r <- as.character(check_df$Round[i])
+    # +1 because the first row of a CSV contains column headings
+    file_row <- i + 1
+    if (!is.null(round_col) &&
+        !identical(round_col, "<none>")) {
+      paste0("Question ", q, ", Round ", r, ", row ", file_row)
+    } else {
+      paste0("Question ", q, ", row ", file_row)
+    }
+  }
+  
+  # -------------------------------------------------------------------------
+  # Validate each submitted response
+  # -------------------------------------------------------------------------
+  
+  for (i in seq_len(nrow(check_df))) {
+    label <- response_label(i)
+    question_type <- tolower(as.character(check_df$Question_Type[i]))
+    # Required identifiers
+    if (is.na(check_df$Question[i]) ||
+        trimws(as.character(check_df$Question[i])) == "") {
+      problems <- c(problems, paste0("Row ", i, ": Question is missing."))
+    }
+    
+    if (is.na(check_df$Participant[i]) ||
+        trimws(as.character(check_df$Participant[i])) == "") {
+      problems <- c(problems, paste0("Row ", i, ": Participant ID is missing."))
+    }
+    
+    # Round is required only when a Round column is supplied
+    if (!is.null(round_col) &&
+        !identical(round_col, "<none>") &&
+        (is.na(check_df$Round[i]) ||
+         trimws(as.character(check_df$Round[i])) == "")) {
+      problems <- c(problems, paste0(label, ": Elicitation round is missing."))
+    }
+    
+    # -----------------------------------------------------------------------
+    # Missing probability estimates
+    # -----------------------------------------------------------------------
+    
+    if (is.na(check_df$LPP_raw[i]) ||
+        trimws(as.character(check_df$LPP_raw[i])) == "") {
+      problems <- c(problems, paste0( label,": Lowest plausible probability is missing."))
+    }
+    
+    if (is.na(check_df$BGP_raw[i]) ||
+        trimws(as.character(check_df$BGP_raw[i])) == "") {
+      problems <- c(problems, paste0(label,": Best-guess probability is missing."))
+    }
+    
+    if (is.na(check_df$HPP_raw[i]) ||
+        trimws(as.character(check_df$HPP_raw[i])) == "") {
+      problems <- c(problems, paste0( label, ": Highest plausible probability is missing."))
+    }
+    
+    # -----------------------------------------------------------------------
+    # Non-numeric probability estimates
+    # -----------------------------------------------------------------------
+    
+    if (!is.na(check_df$LPP_raw[i]) &&
+        trimws(as.character(check_df$LPP_raw[i])) != "" &&
+        is.na(check_df$LPP[i])) {
+      problems <- c(problems, paste0( label, ": Lowest plausible probability must be numeric."))
+    }
+    
+    if (!is.na(check_df$BGP_raw[i]) &&
+        trimws(as.character(check_df$BGP_raw[i])) != "" &&
+        is.na(check_df$BGP[i])) {
+      problems <- c(problems, paste0( label,": Best-guess probability must be numeric."))
+    }
+    
+    if (!is.na(check_df$HPP_raw[i]) &&
+        trimws(as.character(check_df$HPP_raw[i])) != "" &&
+        is.na(check_df$HPP[i])) {
+      problems <- c(problems, paste0( label, ": Highest plausible probability must be numeric." ))
+    }
+    
+    # Continue probability checks only if all three are numeric
+    if (all(is.finite(c(
+      check_df$LPP[i],
+      check_df$BGP[i],
+      check_df$HPP[i]
+    )))) {
+      
+      lpp <- check_df$LPP[i]
+      bgp <- check_df$BGP[i]
+      hpp <- check_df$HPP[i]
+      
+      # -------------------------------------------------------------------
+      # Probability questions
+      # -------------------------------------------------------------------
+      if (question_type == "probability") {
+        
+        # LPP must be strictly above zero
+        if (lpp <= 0) {
+          problems <- c(problems, paste0( label,
+              ": Lowest plausible probability must be greater than 0."))
+        }
+        
+        # HPP must be strictly below one
+        if (hpp >= 1) {
+          problems <- c(problems, 
+                        paste0(label, 
+                               ": Highest plausible probability must be less than 1."))
+        }
+        
+        # BGP must fall within 0–1
+        if (bgp < 0 || bgp > 1) {
+          problems <- c(problems,
+                        paste0(label,
+                               ": Best-guess probability must be between 0 and 1."))
+        }
+      }
+      
+      if (question_type == "numeric") {
+        if (lpp < 0) {
+          problems <- c(problems,
+                        paste0(label,
+                               ": Lowest plausible value must be greater than or equal to 0."))
+        }
+        
+        if (bgp < 0) {
+          problems <- c(problems,
+                        paste0(label,
+                               ": Best-guess value must be greater than or equal to 0."))
+        }
+        
+        if (hpp < 0) {
+          problems <- c(problems,
+                        paste0(label,
+                               ": Highest plausible value must be greater than or equal to 0."))
+        }
+      }
+      
+      # -----------------------------------------------------------------------
+      # Checks that apply to both probability and numeric questions
+      # -----------------------------------------------------------------------
+      
+      if (lpp >= hpp) {
+        problems <- c(problems, paste0(
+          label, ": Lowest plausible value must be less than highest plausible value."))
+      } else {
+        if (bgp < lpp || bgp > hpp) {
+          problems <- c(problems,
+                        paste0(label, ": Best-guess value (",
+                               bgp, ") must fall between the lowest plausible value (",
+                               lpp, ") and highest plausible value (", hpp,")."))
+        }
+      }
+    }
+      
+    # -----------------------------------------------------------------------
+    # Assessment confidence
+    # -----------------------------------------------------------------------
+    
+    if (!is.null(AC_col) &&
+        !identical(AC_col, "<none>") &&
+        AC_col %in% names(df)) {
+      
+      AC_raw <- check_df$AC_raw[i]
+      AC <- check_df$AC[i]
+      
+      # Missing AC is allowed and will be interpreted as 100
+      if (!is.na(AC_raw) &&
+          trimws(as.character(AC_raw)) != "") {
+        
+        if (is.na(AC)) {
+          
+          problems <- c(
+            problems,
+            paste0(
+              label,
+              ": Assessment confidence must be numeric or left blank."
+            )
+          )
+          
+        } else if (AC < 0 || AC > 100) {
+          
+          problems <- c(
+            problems,
+            paste0(
+              label,
+              ": Assessment confidence must be between 0 and 100."
+            )
+          )
+        }
+      }
+    }
+  }
+  
+  # -------------------------------------------------------------------------
+  # Duplicate response detection
+  # -------------------------------------------------------------------------
+  
+  duplicate_key <- paste(
+    check_df$Question,
+    check_df$Round,
+    check_df$Participant,
+    sep = " | "
+  )
+  
+  duplicated_responses <- duplicated(duplicate_key) |
+    duplicated(duplicate_key, fromLast = TRUE)
+  
+  if (any(duplicated_responses)) {
+    
+    duplicate_values <- unique(duplicate_key[duplicated_responses])
+    
+    for (dup in duplicate_values) {
+      
+      problems <- c(
+        problems,
+        paste0(
+          "Duplicate response detected for ",
+          dup,
+          ". Each participant should have only one response ",
+          "per question and elicitation round."
+        )
+      )
+    }
+  }
+  
+  # -------------------------------------------------------------------------
+  # Return validation result
+  # -------------------------------------------------------------------------
+  
+  list(
+    valid = length(problems) == 0,
+    problems = unique(problems)
+  )
+}
+
+choose_round_facet_cols <- function(n_questions) {
+  n_questions
+}
