@@ -1220,29 +1220,119 @@ server <- function(input, output, session) {
       }
     }
     
-    patchwork::wrap_plots(plots, ncol = length(plots))+
-      patchwork::plot_layout(guides = "collect") &
-      theme(legend.position = "bottom")
-    
+    patchwork::wrap_plots(plots, ncol = length(plots)) +
+      patchwork::plot_layout(guides="collect")    
   })
   
   # Plots: Histogram + Beta fit (faceted by full label)
   output$plot_hist <- renderPlot({
     req(plot_results())
-    build_hist_plot(r = plot_results(),
-      show_beta       = isTRUE(input$show_beta),
-      show_AC_mix    = isTRUE(input$show_AC_mix),
-      facet_cols      = NULL)
+    r <- plot_results()
+    questions <- unique(as.character(r$summaries$Question))
+    plots <- list()
+    
+    for (q in questions) {
+      
+      q_type <- r$summaries %>%
+        filter(as.character(Question) == q) %>%
+        pull(Question_Type) %>%
+        unique() %>%
+        .[1]
+      
+      samples_q <- r$samples_all %>%
+        filter(as.character(Question) == q)
+      
+      dens_mix_q <- r$dens_mix_all %>%
+        filter(as.character(Question) == q)
+      
+      dens_mix_w_q <- r$dens_mix_w_all %>%
+        filter(as.character(Question) == q)
+      
+      beta_q <- r$beta_all %>%
+        filter(as.character(Question) == q)
+      
+      if (q_type == "probability") {
+        
+        plots[[length(plots) + 1]] <-
+          build_probability_hist_plot(
+            samples = samples_q,
+            dens_mix = dens_mix_q,
+            dens_mix_w = dens_mix_w_q,
+            df_beta = beta_q,
+            show_AC_mix = isTRUE(input$show_AC_mix),
+            show_beta = isTRUE(input$show_beta))
+        
+      } else if (q_type == "numeric") {
+        
+        plots[[length(plots) + 1]] <-
+          build_numeric_hist_plot(
+            samples = samples_q,
+            dens_mix = dens_mix_q,
+            dens_mix_w = dens_mix_w_q,
+            show_AC_mix = isTRUE(input$show_AC_mix))
+      }
+    }
+    
+    patchwork::wrap_plots(plots, ncol = length(plots)) +
+      patchwork::plot_layout(guides="collect")
+    
   })
   
   # Plots: CDF comparison (faceted by full label)
   output$plot_cdf <- renderPlot({
     req(plot_results())
-    build_cdf_plot(r = plot_results(),
-      show_individual = isTRUE(input$show_individual),
-      show_beta       = isTRUE(input$show_beta),
-      show_AC_mix    = isTRUE(input$show_AC_mix),
-      facet_cols      = NULL)
+    r <- plot_results()
+    questions <- unique(as.character(r$summaries$Question))
+    plots <- list()
+    
+    for (q in questions) {
+      q_type <- r$summaries %>%
+        filter(as.character(Question) == q) %>%
+        pull(Question_Type) %>%
+        unique() %>%
+        .[1]
+      
+      cdf_mix_q <- r$cdf_mix_all %>%
+        filter(as.character(Question) == q)
+      
+      cdf_mix_w_q <- r$cdf_mix_w_all %>%
+        filter(as.character(Question) == q)
+      
+      cdf_ind_q <- r$cdf_ind_all %>%
+        filter(as.character(Question) == q)
+      
+      cdf_beta_q <- r$cdf_beta_all %>%
+        filter(as.character(Question) == q)
+      
+      if (q_type == "probability") {
+        
+        plots[[length(plots) + 1]] <-
+          build_probability_cdf_plot(
+            df_mix = cdf_mix_q,
+            df_mix_w = cdf_mix_w_q,
+            df_ind = cdf_ind_q,
+            df_beta = cdf_beta_q,
+            show_individual = isTRUE(input$show_individual),
+            show_beta = isTRUE(input$show_beta),
+            show_AC_mix = isTRUE(input$show_AC_mix)
+          )
+        
+      } else if (q_type == "numeric") {
+        
+        plots[[length(plots) + 1]] <-
+          build_numeric_cdf_plot(
+            df_mix = cdf_mix_q,
+            df_mix_w = cdf_mix_w_q,
+            df_ind = cdf_ind_q,
+            show_individual = isTRUE(input$show_individual),
+            show_AC_mix = isTRUE(input$show_AC_mix)
+          )
+      }
+    }
+    
+    patchwork::wrap_plots(plots,ncol = length(plots)) +
+      patchwork::plot_layout(guides = "collect" )
+    
   })
   
   ###############################################################################
