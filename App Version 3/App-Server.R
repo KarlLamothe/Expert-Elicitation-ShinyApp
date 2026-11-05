@@ -649,6 +649,16 @@ server <- function(input, output, session) {
               res_list[[q]][[rnd]]$summary %>%
                 mutate(Round = rnd, .after = Question)}))}))
 
+      ranking_summary_all <- bind_rows(
+        lapply(names(res_list), function(q) {
+          bind_rows(lapply(names(res_list[[q]]), function(rnd) {
+              obj <- res_list[[q]][[rnd]]
+              if (is.null(obj$option_summary)) {
+                return(NULL)
+              }
+              obj$option_summary %>%
+                mutate(Question = q, Round = rnd)}))}))
+      
       dens_mix_all <- bind_rows(
         lapply(names(res_list), function(q) {
           bind_rows(lapply(names(res_list[[q]]), function(rnd) {
@@ -788,6 +798,7 @@ server <- function(input, output, session) {
     
     list(
       summaries      = summary_all,
+      ranking_summary_all = ranking_summary_all,
       dens_mix_all   = dens_mix_all,
       dens_mix_w_all = dens_mix_w_all,
       dens_ind_all   = dens_ind_all,
@@ -1242,7 +1253,29 @@ server <- function(input, output, session) {
       patchwork::plot_layout(guides = "collect") &
       theme(legend.position = "bottom")
   })
-
+  
+  filter_questions <- function(df, sel) {
+    if (is.null(df) ||
+        nrow(df) == 0 ||
+        !"Question" %in% names(df)) {
+      return(df)
+    }
+    df %>%
+      filter(as.character(Question) %in% as.character(sel))
+  }
+  
+  filter_question <- function(df, q) {
+    
+    if (is.null(df) ||
+        nrow(df) == 0 ||
+        !"Question" %in% names(df)) {
+      return(df)
+    }
+    
+    df %>%
+      filter(as.character(Question) == q)
+  }
+  
     # Plots: Mixture density (faceted by full label)
   output$plot_density <- renderPlot({
     req(plot_results())
@@ -1255,21 +1288,11 @@ server <- function(input, output, session) {
       if (length(sel) > 0) {
         r$summaries <- r$summaries %>%
           filter(as.character(Question) %in% as.character(sel))
-        
-        r$samples_all <- r$samples_all %>%
-          filter(as.character(Question) %in% as.character(sel))
-        
-        r$dens_mix_all <- r$dens_mix_all %>%
-          filter(as.character(Question) %in% as.character(sel))
-        
-        r$dens_mix_w_all <- r$dens_mix_w_all %>%
-          filter(as.character(Question) %in% as.character(sel))
-        
-        r$dens_ind_all <- r$dens_ind_all %>%
-          filter(as.character(Question) %in% as.character(sel))
-        
-        r$beta_all <- r$beta_all %>%
-          filter(as.character(Question) %in% as.character(sel))}}
+        r$samples_all   <- filter_questions(r$samples_all, sel)
+        r$dens_mix_all  <- filter_questions(r$dens_mix_all, sel)
+        r$dens_mix_w_all <- filter_questions(r$dens_mix_w_all, sel)
+        r$dens_ind_all  <- filter_questions(r$dens_ind_all, sel)
+        r$beta_all      <- filter_questions(r$beta_all, sel)}}
 
     # Determine questions after filtering
     questions <- unique(as.character(r$summaries$Question))
@@ -1292,17 +1315,10 @@ server <- function(input, output, session) {
         next
       }
 
-      dens_mix_q <- r$dens_mix_all %>%
-        filter(as.character(Question) == q)
-      
-      dens_mix_w_q <- r$dens_mix_w_all %>%
-        filter(as.character(Question) == q)
-      
-      dens_ind_q <- r$dens_ind_all %>%
-        filter(as.character(Question) == q)
-      
-      beta_q <- r$beta_all %>%
-        filter(as.character(Question) == q)
+      dens_mix_q   <- filter_question(r$dens_mix_all, q)
+      dens_mix_w_q <- filter_question(r$dens_mix_w_all, q)
+      dens_ind_q   <- filter_question(r$dens_ind_all, q)
+      beta_q       <- filter_question(r$beta_all, q)
       
       if (q_type == "probability") {
         
@@ -1332,6 +1348,15 @@ server <- function(input, output, session) {
         summary_q <- r$summaries %>%
           filter(as.character(Question) == q)
         plots[[length(plots) + 1]] <- build_yesno_plot(summary_q)
+        
+      } else if (q_type == "ranking") {
+        
+        ranking_q <- r$ranking_summary_all %>%
+          filter(as.character(Question) == q)
+        
+        plots[[length(plots) + 1]] <-
+          build_ranking_pooled_plot(ranking_q)
+        
       }
     }
     # Assemble
@@ -1350,18 +1375,11 @@ server <- function(input, output, session) {
       if (length(sel) > 0) {
         r$summaries <- r$summaries %>%
           filter(as.character(Question) %in% as.character(sel))
-        
-        r$samples_all <- r$samples_all %>%
-          filter(as.character(Question) %in% as.character(sel))
-        
-        r$dens_mix_all <- r$dens_mix_all %>%
-          filter(as.character(Question) %in% as.character(sel))
-        
-        r$dens_mix_w_all <- r$dens_mix_w_all %>%
-          filter(as.character(Question) %in% as.character(sel))
-        
-        r$beta_all <- r$beta_all %>%
-          filter(as.character(Question) %in% as.character(sel))
+        r$samples_all   <- filter_questions(r$samples_all, sel)
+        r$dens_mix_all  <- filter_questions(r$dens_mix_all, sel)
+        r$dens_mix_w_all <- filter_questions(r$dens_mix_w_all, sel)
+        r$dens_ind_all  <- filter_questions(r$dens_ind_all, sel)
+        r$beta_all      <- filter_questions(r$beta_all, sel)
       }
     }
  
@@ -1384,17 +1402,11 @@ server <- function(input, output, session) {
         next
       }
       
-      samples_q <- r$samples_all %>%
-        filter(as.character(Question) == q)
-      
-      dens_mix_q <- r$dens_mix_all %>%
-        filter(as.character(Question) == q)
-      
-      dens_mix_w_q <- r$dens_mix_w_all %>%
-        filter(as.character(Question) == q)
-      
-      beta_q <- r$beta_all %>%
-        filter(as.character(Question) == q)
+      dens_mix_q   <- filter_question(r$dens_mix_all, q)
+      dens_mix_w_q <- filter_question(r$dens_mix_w_all, q)
+      dens_ind_q   <- filter_question(r$dens_ind_all, q)
+      beta_q       <- filter_question(r$beta_all, q)
+      samples_q    <- filter_question(r$samples_all, q)
       
       if (q_type == "probability") {
         
@@ -1423,7 +1435,15 @@ server <- function(input, output, session) {
         plots[[length(plots) + 1]] <-
           build_yesno_plot(summary_q)
         
-      }
+       } else if (q_type == "ranking") {
+         
+         ranking_q <- r$ranking_summary_all %>%
+           filter(as.character(Question) == q)
+         
+         plots[[length(plots) + 1]] <-
+           build_ranking_pooled_plot(ranking_q)
+         
+       }
     }
     
     patchwork::wrap_plots(plots, ncol = length(plots)) +
@@ -1442,16 +1462,11 @@ server <- function(input, output, session) {
       if (length(sel) > 0) {
         r$summaries <- r$summaries %>%
           filter(as.character(Question) %in% as.character(sel))
-        r$samples_all <- r$samples_all %>%
-          filter(as.character(Question) %in% as.character(sel))
-        r$cdf_mix_all <- r$cdf_mix_all %>%
-          filter(as.character(Question) %in% as.character(sel))
-        r$cdf_mix_w_all <- r$cdf_mix_w_all %>%
-          filter(as.character(Question) %in% as.character(sel))
-        r$cdf_ind_all <- r$cdf_ind_all %>%
-          filter(as.character(Question) %in% as.character(sel))
-        r$cdf_beta_all <- r$cdf_beta_all %>%
-          filter(as.character(Question) %in% as.character(sel))
+        r$samples_all   <- filter_questions(r$samples_all, sel)
+        r$cdf_mix_all   <- filter_questions(r$cdf_mix_all, sel)
+        r$cdf_mix_w_all <- filter_questions(r$cdf_mix_w_all, sel)
+        r$cdf_ind_all   <- filter_questions(r$cdf_ind_all, sel)
+        r$cdf_beta_all  <- filter_questions(r$cdf_beta_all, sel)
       }
     }
     
@@ -1474,18 +1489,11 @@ server <- function(input, output, session) {
         next
       }
       
-      cdf_mix_q <- r$cdf_mix_all %>%
-        filter(as.character(Question) == q)
-      
-      cdf_mix_w_q <- r$cdf_mix_w_all %>%
-        filter(as.character(Question) == q)
-      
-      cdf_ind_q <- r$cdf_ind_all %>%
-        filter(as.character(Question) == q)
-      
-      cdf_beta_q <- r$cdf_beta_all %>%
-        filter(as.character(Question) == q)
-      
+      cdf_mix_q   <- filter_question(r$cdf_mix_all, q)
+      cdf_mix_w_q <- filter_question(r$cdf_mix_w_all, q)
+      cdf_ind_q   <- filter_question(r$cdf_ind_all, q)
+      cdf_beta_q   <- filter_question(r$cdf_beta_all, q)
+
       if (q_type == "probability") {
         
         plots[[length(plots) + 1]] <-
@@ -1516,6 +1524,14 @@ server <- function(input, output, session) {
         
         plots[[length(plots) + 1]] <-
           build_yesno_plot(summary_q)
+        
+      } else if (q_type == "ranking") {
+        
+        ranking_q <- r$ranking_summary_all %>%
+          filter(as.character(Question) == q)
+        
+        plots[[length(plots) + 1]] <-
+          build_ranking_pooled_plot(ranking_q)
         
       }
     }

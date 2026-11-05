@@ -542,13 +542,33 @@ summarize_question_ranking <- function(
     question_type = "ranking"
 ) {
   
+  df2 <- df %>%
+    transmute(
+      Participant = .data[[id_col]],
+      Option = .data[[option_col]],
+      Rank = as.numeric(.data[[rank_col]])
+    )
+  
+  option_summary <- df2 %>%
+    group_by(Option) %>%
+    summarise(
+      Mean_Rank = mean(Rank, na.rm = TRUE),
+      Median_Rank = median(Rank, na.rm = TRUE),
+      Rank_SD = sd(Rank, na.rm = TRUE),
+      First_Place_Votes = sum(Rank == 1, na.rm = TRUE),
+      Last_Place_Votes  = sum(Rank == max(Rank, na.rm = TRUE), na.rm = TRUE),
+      .groups = "drop"
+    ) %>%
+    arrange(Mean_Rank)
+  
   summary_tbl <- tibble(
     Question = question_label,
     Question_Type = question_type,
-    N_Participants = dplyr::n_distinct(df[[id_col]])
+    N_Participants = n_distinct(df2$Participant)
   )
   
   list(
-    summary = summary_tbl
+    summary = summary_tbl,
+    option_summary = option_summary
   )
 }

@@ -547,3 +547,17 @@ build_ranking_individuals_plot <- function(df,id_col,option_col,
   p
 }
 
+###############################################################################
+# Ranking pooled
+###############################################################################
+build_ranking_pooled_plot <- function(df_summary) {
+  
+  df_summary <- df_summary %>%
+    mutate(Question_Round = paste0("Question ", Question, "\nRound ", Round))
+  
+  ggplot(df_summary, aes(x = Mean_Rank, y = reorder(Option, Mean_Rank))) +
+    geom_col(fill = "#2A7F62") +
+    labs(x = "Mean Rank", y = NULL)+ 
+    coord_flip() +
+    facet_wrap(~ Question_Round, ncol = 1)
+}
