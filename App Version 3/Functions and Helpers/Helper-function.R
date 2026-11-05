@@ -42,19 +42,43 @@ best_question_col <- function(df) {
 # Validate expert elicitation input data
 #############################################################################
 
-validate_elicitation_data <- function(df, id_col, question_col, lpp_col,
-                                      bgp_col, hpp_col, response_col = NULL,
-                                      AC_col = NULL, round_col = NULL) {
+validate_elicitation_data <- function(df,
+                                      id_col,
+                                      question_col,
+                                      lpp_col,
+                                      bgp_col,
+                                      hpp_col,
+                                      response_col = NULL,
+                                      option_col = NULL,
+                                      rank_col = NULL,
+                                      AC_col = NULL,
+                                      round_col = NULL) {
   problems <- character(0)
   # -------------------------------------------------------------------------
   # Extract and standardize mapped columns
   # -------------------------------------------------------------------------
   check_df <- data.frame(
+    
     Question = df[[question_col]],
+    
     Question_Type = if ("Question_Type" %in% names(df)) {
       df$Question_Type
     } else {
       "probability"
+    },
+    
+    Option = if (!is.null(option_col) &&
+                 option_col %in% names(df)) {
+      as.character(df[[option_col]])
+    } else {
+      NA_character_
+    },
+    
+    Rank = if (!is.null(rank_col) &&
+               rank_col %in% names(df)) {
+      suppressWarnings(as.numeric(df[[rank_col]]))
+    } else {
+      NA_real_
     },
     
     Response = if (!is.null(response_col) &&
@@ -155,8 +179,15 @@ validate_elicitation_data <- function(df, id_col, question_col, lpp_col,
     # Ranking questions
     if (question_type == "ranking") {
       
+      rank_val <- suppressWarnings(as.numeric(check_df$Rank[i]))
+      if (is.na(rank_val)) {
+        problems <- c(problems, paste0( label, ": Rank is missing or non-numeric."))
+      } else {
+        if (rank_val <= 0 || rank_val != floor(rank_val)) {
+          problems <- c(problems, paste0( label, ": Rank must be a positive integer."))
+        }
+      }
       next
-      
     }
     # -----------------------------------------------------------------------
     # Missing probability estimates
@@ -345,15 +376,68 @@ validate_elicitation_data <- function(df, id_col, question_col, lpp_col,
       )
     }
   }
-  
   # -------------------------------------------------------------------------
+  # Ranking-specific validation
+  # -------------------------------------------------------------------------
+  
+  ranking_df <- check_df %>%
+    filter(tolower(as.character(Question_Type)) == "ranking")
+  
+  if (nrow(ranking_df) > 0) {
+  
+    rank_sequences <- ranking_df %>%
+      group_by(Question, Round, Participant) %>%
+      summarise(ranks = list(sort(Rank)), .groups = "drop")
+    
+    bad_sequence <- sapply(
+      rank_sequences$ranks, function(x) {
+        x <- sort(as.numeric(x))
+        expected <- seq_along(x)
+        !all(x == expected)
+      }
+    )
+    
+    if (any(bad_sequence)) {
+      
+      bad_groups <- rank_sequences[bad_sequence, ]
+      
+      for (j in seq_len(nrow(bad_groups))) {
+        
+        problems <- c(problems, paste0(
+          "Invalid ranking sequence for Question ", bad_groups$Question[j],
+          ", Round ", bad_groups$Round[j], ", Participant ",
+            bad_groups$Participant[j],
+            ". Ranks must form a complete sequence beginning at 1."))
+      }
+    }
+    
+    #duplicate options
+    dup_options <- ranking_df %>%
+      group_by(Question, Round, Participant, Option) %>%
+      summarise(n = n(), .groups = "drop") %>%
+      filter(n > 1)
+    
+    if (nrow(dup_options) > 0) {
+      problems <- c(problems,
+        "Ranking questions contain duplicated options for one or more participants.")
+    }
+    
+    # duplicate ranks
+    dup_ranks <- ranking_df %>%
+      group_by(Question, Round, Participant, Rank) %>%
+      summarise(n = n(), .groups = "drop") %>%
+      filter(n > 1)
+    
+    if (nrow(dup_ranks) > 0) {
+      problems <- c(problems,
+        "A participant cannot assign the same rank more than once."
+      )
+      
+    }
+  }
+    
   # Return validation result
-  # -------------------------------------------------------------------------
-  
-  list(
-    valid = length(problems) == 0,
-    problems = unique(problems)
-  )
+  list(valid = length(problems) == 0, problems = unique(problems))
 }
 
 choose_round_facet_cols <- function(n_questions) {

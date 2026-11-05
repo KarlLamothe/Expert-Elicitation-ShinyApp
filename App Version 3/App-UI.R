@@ -213,15 +213,15 @@ ui <- fluidPage(
                                 "For multi-round elicitations, changes represent Round 2 minus Round 1.")),
                uiOutput("question_panel_summary"),
                uiOutput("summary_dashboard"),
-               tags$hr(),
-               h4("Round Comparison"),
-               helpText("Changes in pooled estimates and assessment confidence between Round 1 and Round 2."),
-               tableOutput("round_comparison_table"),
+               uiOutput("round_comparison_ui"),
+               uiOutput("yesno_results_ui"),
+               uiOutput("ranking_results_ui"),
                tags$hr(),
                tags$details(tags$summary(
                style = "cursor: pointer;font-weight: 600;font-size: 20px;","Detailed Results" ),
                br(),
                div(style = "font-size: 15px;", tableOutput("summary_table"))),
+              
                tags$hr(),
          
               h4("Definitions"),

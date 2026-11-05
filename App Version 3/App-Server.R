@@ -378,6 +378,8 @@ server <- function(input, output, session) {
       bgp_col = input$col_bgp,
       hpp_col = input$col_hpp,
       response_col = input$col_response,
+      option_col = input$col_option,
+      rank_col = input$col_rank,
       AC_col = AC_col_val,
       round_col = round_col_val)
     
@@ -609,6 +611,13 @@ server <- function(input, output, session) {
       # Preserve the original structure
       # ==============================================================
       summary_all <- bind_rows(lapply(res_list, `[[`, "summary"))
+      ranking_summary_all <- bind_rows(lapply(names(res_list), function(q) {
+          obj <- res_list[[q]]
+          if (is.null(obj$option_summary)) {
+            return(NULL)
+          }
+          obj$option_summary %>%
+            mutate(Question = q)}))
       dens_mix_all <- bind_rows(
         lapply(res_list, function(r) r$facet$mixture))
       dens_mix_w_all <- bind_rows(
@@ -1091,6 +1100,12 @@ server <- function(input, output, session) {
       f_summary_csv <- file.path(outdir, paste0("summary_", Sys.Date(), ".csv"))
       write_csv(r$summaries, f_summary_csv)
       
+      if (!is.null(r$ranking_summary_all) &&
+          nrow(r$ranking_summary_all) > 0) {
+        f_ranking_csv <- file.path(outdir, paste0("ranking_summary_", Sys.Date(), ".csv"))
+        write_csv(r$ranking_summary_all,f_ranking_csv)
+      }
+      
       # Zip them up
       oldwd <- setwd(outdir); on.exit(setwd(oldwd), add = TRUE)
       zip(zipfile = file, files = basename(c(f1, f2, f3, f4,f_summary_csv)))
@@ -1548,6 +1563,21 @@ server <- function(input, output, session) {
   output$summary_dashboard <- renderUI({
     req(plot_results())
     s <- plot_results()$summaries
+    
+    q_type <- unique(na.omit(as.character(s$Question_Type)))
+    if (length(q_type) == 0) {
+      return(NULL)
+    }
+    q_type <- q_type[1]
+    
+    if (q_type == "ranking") {
+      return(NULL)
+    }
+    
+    if (q_type == "yesno") {
+      return(NULL)
+    }
+    
     single_round_view <-
       !is.null(input$round_filter) &&
       input$round_filter != "All"
@@ -1692,14 +1722,74 @@ server <- function(input, output, session) {
   ###############################################################################
   # SUMMARY TABLES AND REPORTING
   ################################################################################
+  output$round_comparison_ui <- renderUI({
+    req(results())
+    summ <- results()$summaries %>%
+      filter(Question_Type %in% c("probability", "numeric"))
+    
+    if (nrow(summ) == 0) {
+      return(NULL)
+    }
+    
+    tagList( h4("Round Comparison"),
+      p("Changes in pooled estimates and assessment confidence between Round 1 and Round 2."),
+      tableOutput("round_comparison_table")
+    )
+  })
+  
+  output$yesno_results_ui <- renderUI({
+    req(results())
+    yesno_tbl <- results()$summaries %>%
+      filter(Question_Type == "yesno")
+    if (nrow(yesno_tbl) == 0) {
+      return(NULL)
+    }
+    tagList(
+      h4("Yes/No Results"),
+      p("Pooled response proportions and assessment confidence."),
+      tableOutput("yesno_summary_table")
+    )
+  })
+  
+  output$yesno_summary_table <- renderTable({
+    req(plot_results())
+    yesno_tbl <- plot_results()$summaries %>%
+      filter(Question_Type == "yesno")
+    if (nrow(yesno_tbl) == 0) {
+      return(NULL)
+    }
+    yesno_tbl %>%
+      mutate(across(where(is.numeric), ~ round(.x, 2)))
+  })
+  
+  output$ranking_results_ui <- renderUI({
+    req(results())
+    ranking_tbl <- results()$ranking_summary_all
+    if (is.null(ranking_tbl) || nrow(ranking_tbl) == 0) {
+      return(NULL)
+    }
+    tagList(
+      h4("Ranking Results"),
+      tableOutput("ranking_summary_table")
+    )
+  })
+  
   output$round_comparison_table <- renderTable({
     req(results())
+    
     # Round comparison only makes sense when viewing all rounds
     if (!is.null(input$round_filter) &&
         input$round_filter != "All") {
       return(NULL)
     }
-    summ <- results()$summaries
+    
+    summ <- results()$summaries %>%
+      filter(Question_Type %in% c("probability", "numeric"))
+    
+    if (is.null(summ) || nrow(summ) == 0) {
+      return(NULL)
+    }
+    
     # Only build comparison if Round exists
     if (!"Round" %in% names(summ)) {
       return(NULL)
@@ -1740,28 +1830,74 @@ server <- function(input, output, session) {
   # Summary table & download
   output$summary_table <- renderTable({
     req(plot_results())
-    plot_results()$summaries
+    plot_results()$summaries %>%
+      filter(Question_Type %in% c("probability", "numeric", "yesno"))
+  })
+  
+  output$hasRankingResults <- reactive({
+    req(results())
+    !is.null(results()$ranking_summary_all) &&
+      nrow(results()$ranking_summary_all) > 0
+  })
+  
+  outputOptions(output, "hasRankingResults", suspendWhenHidden = FALSE)
+  
+  output$ranking_summary_table <- renderTable({
+    req(plot_results())
+    ranking_tbl <- plot_results()$ranking_summary_all
+    if (is.null(ranking_tbl) || nrow(ranking_tbl) == 0) {
+      return(NULL)
+    }
+    
+    ranking_tbl %>%
+      arrange(Question,Round, Mean_Rank, Median_Rank) %>%
+      mutate(across(c(Mean_Rank, Median_Rank, Rank_SD), ~ round(.x, 2)))
   })
   
   output$download_summary <- downloadHandler(
     filename = function() {
-      paste0("elicitation_summaries_", format(Sys.time(), "%Y%m%d_%H%M"), ".csv")
+      paste0("elicitation_summaries_", format(Sys.time(), "%Y%m%d_%H%M"), ".zip")
     },
     
+    
     content = function(file) {
+      outdir <- tempfile("summaries_")
+      dir.create(outdir)
       out <- results()$summaries
+      
       if (!is.null(input$col_question_text) &&
           !identical(input$col_question_text, "<none>")) {
+        
         question_lookup <- raw_df() %>%
-          distinct(Question = as.character(.data[[input$col_question]]),
-                   Question_Text = .data[[input$col_question_text]])
+          group_by(Question = as.character(.data[[input$col_question]])) %>%
+          summarise(Question_Text = first(.data[[input$col_question_text]]),
+            .groups = "drop")
         
         out <- out %>%
           mutate(Question = as.character(Question)) %>%
           left_join(question_lookup, by = "Question") %>%
           relocate(Question_Text, .after = Question)
       }
-      readr::write_csv(out, file)
+      
+      write_csv(out, file.path(outdir, "detailed_results.csv"))
+      
+      ranking_tbl <- results()$ranking_summary_all
+      if (!is.null(ranking_tbl) &&
+          nrow(ranking_tbl) > 0) {
+        write_csv(ranking_tbl, file.path( outdir, "ranking_results.csv"))
+      }
+      
+      yesno_tbl <- results()$summaries %>%
+        filter(Question_Type == "yesno")
+      
+      if (nrow(yesno_tbl) > 0) {
+        write_csv(yesno_tbl, file.path( outdir, "yesno_results.csv"))
+      }
+      
+      oldwd <- setwd(outdir)
+      on.exit(setwd(oldwd), add = TRUE)
+      
+      zip(zipfile = file, files = list.files(outdir))
     }
   )
   

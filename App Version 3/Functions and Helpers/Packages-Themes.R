@@ -1,6 +1,6 @@
 # List of packages being used
 list.of.packages <- c('shiny', 'readr', 'dplyr', 'tidyr', 'purrr', 'ggplot2', 'scales',
-                      'googlesheets4',"bslib","rmarkdown",'kableExtra')
+                      'googlesheets4',"bslib","rmarkdown",'kableExtra', 'patchwork')
 
 # Identify packages in the list that are not on the computer
 new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
@@ -20,6 +20,7 @@ library(googlesheets4) # retrieving google sheets data
 library(bslib)  # user interface
 library(rmarkdown)  # report
 library(kableExtra)  # report
+library(patchwork)  # plotting
 
 suppressPackageStartupMessages({
   library(shiny)
@@ -33,6 +34,8 @@ suppressPackageStartupMessages({
   library(bslib)
   library(rmarkdown)  
   library(kableExtra)
+  library(patchwork)
+  
 })
 
 options(scipen=999) # Remove scientific notation
