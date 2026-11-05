@@ -514,3 +514,36 @@ build_yesno_plot <- function(summary_df) {
     labs(x = NULL, y = "Proportion", fill = NULL) +
     facet_wrap(~ Round_Label, ncol = 1)
 }
+
+###############################################################################
+###############################################################################
+# Ranking Expert Estimates
+###############################################################################
+###############################################################################
+
+build_ranking_individuals_plot <- function(df,id_col,option_col,
+                                           rank_col,round_col = NULL) {
+  
+  df_plot <- df %>%
+    transmute(
+      Participant = .data[[id_col]],
+      Option = .data[[option_col]],
+      Rank = as.numeric(.data[[rank_col]]),
+      Question = .data[["Question"]],
+      Round = .data[[round_col]]) %>%
+    mutate(Round_Label = paste0("Question ", Question,"\nRound ", Round))%>%
+    mutate(Rank = factor(Rank))
+  
+  p <- ggplot(df_plot, aes(y = Participant, x = Option, fill = Rank)) +
+    geom_tile(colour = "white", linewidth = 0.5) +
+    geom_text(aes(label = Rank),colour = "black", fontface = "bold",size = 6) +
+    labs(y = "Participant", x = NULL, fill = "Rank") +
+    scale_fill_viridis_d(direction = -1) +
+    facet_wrap(~ Round_Label,ncol = 1) +
+    theme(#axis.text.x = element_text(angle = 45, hjust = 1),
+          axis.text.y = element_blank(), 
+          axis.ticks.y = element_blank())
+  
+  p
+}
+

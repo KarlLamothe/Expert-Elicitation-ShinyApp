@@ -151,6 +151,13 @@ validate_elicitation_data <- function(df, id_col, question_col, lpp_col,
       }
       next
     }
+    
+    # Ranking questions
+    if (question_type == "ranking") {
+      
+      next
+      
+    }
     # -----------------------------------------------------------------------
     # Missing probability estimates
     # -----------------------------------------------------------------------
@@ -309,6 +316,8 @@ validate_elicitation_data <- function(df, id_col, question_col, lpp_col,
   # Duplicate response detection
   # -------------------------------------------------------------------------
   
+  duplicate_rows <- tolower(as.character(check_df$Question_Type)) != "ranking"
+  
   duplicate_key <- paste(
     check_df$Question,
     check_df$Round,
@@ -316,8 +325,8 @@ validate_elicitation_data <- function(df, id_col, question_col, lpp_col,
     sep = " | "
   )
   
-  duplicated_responses <- duplicated(duplicate_key) |
-    duplicated(duplicate_key, fromLast = TRUE)
+  duplicated_responses <- duplicate_rows &
+    (duplicated(duplicate_key) | duplicated(duplicate_key, fromLast = TRUE))
   
   if (any(duplicated_responses)) {
     

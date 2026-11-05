@@ -259,6 +259,18 @@ server <- function(input, output, session) {
                                       ignore.case = TRUE, value = TRUE)
                 if (length(hit) > 0) hit[1] else "<none>"
               }),
+            selectInput("col_option", "Ranking option column",
+                        choices = c("<none>", cols), selected = {
+                          hit <- grep("Option|Alternative|Item|Category", cols,
+                                      ignore.case = TRUE, value = TRUE)
+                if (length(hit) > 0) hit[1] else "<none>"
+              }),
+            selectInput("col_rank", "Rank column", choices = c("<none>", cols),
+                        selected = {
+                          hit <- grep("^Rank$", cols, ignore.case = TRUE,
+                                      value = TRUE)
+                if (length(hit) > 0) hit[1] else "<none>"
+              }),
             selectInput("col_id", "Participant identifier column",
                         choices = cols,
                         selected = if ("Participant" %in% cols)
@@ -415,6 +427,18 @@ server <- function(input, output, session) {
             question_type = q_type
           )
           
+        } else if (q_type == "ranking") {
+          
+          summarize_question_ranking(
+            df_qr,
+            id_col = input$col_id,
+            option_col = input$col_option,
+            rank_col = input$col_rank,
+            AC_col = AC_col_val,
+            question_label = as.character(q),
+            question_type = q_type
+          )
+        
         } else {
           
           summarize_question_pert(
@@ -460,7 +484,19 @@ server <- function(input, output, session) {
               question_type = q_type
             )
             
-          } else {
+           } else if (q_type == "ranking") {
+              
+              summarize_question_ranking(
+                df_qr,
+                id_col = input$col_id,
+                option_col = input$col_option,
+                rank_col = input$col_rank,
+                AC_col = AC_col_val,
+                question_label = as.character(q),
+                question_type = q_type
+              )
+              
+            } else {
             
             summarize_question_pert(
               df_qr,
@@ -622,55 +658,46 @@ server <- function(input, output, session) {
         lapply(names(res_list), function(q) {
           bind_rows(lapply(names(res_list[[q]]), function(rnd) {
             extract_facet(res_list[[q]][[rnd]], "mixture_w", rnd)}))}))
-      
-      
+
       dens_ind_all <- bind_rows(
         lapply(names(res_list), function(q) {
           bind_rows(lapply(names(res_list[[q]]), function(rnd) {
             extract_facet(res_list[[q]][[rnd]], "individual", rnd)}))}))
-      
       
       beta_all <- bind_rows(
         lapply(names(res_list), function(q) {
           bind_rows(lapply(names(res_list[[q]]), function(rnd) {
             extract_facet(res_list[[q]][[rnd]], "beta", rnd)}))}))
       
-      
       beta_w_all <- bind_rows(
         lapply(names(res_list), function(q) {
           bind_rows(lapply(names(res_list[[q]]), function(rnd) {
             extract_facet(res_list[[q]][[rnd]], "beta_w", rnd)}))}))
-      
       
       cdf_mix_all <- bind_rows(
         lapply(names(res_list), function(q) {
           bind_rows(lapply(names(res_list[[q]]), function(rnd) {
             extract_facet(res_list[[q]][[rnd]], "cdf_mixture", rnd)}))}))
       
-      
       cdf_mix_w_all <- bind_rows(
         lapply(names(res_list), function(q) {
           bind_rows(lapply(names(res_list[[q]]), function(rnd) {
             extract_facet(res_list[[q]][[rnd]], "cdf_mixture_w", rnd)}))}))
-      
       
       cdf_emp_all <- bind_rows(
         lapply(names(res_list), function(q) {
           bind_rows(lapply(names(res_list[[q]]), function(rnd) {
             extract_facet(res_list[[q]][[rnd]], "cdf_emp", rnd)}))}))
       
-      
       cdf_emp_w_all <- bind_rows(
         lapply(names(res_list), function(q) {
           bind_rows(lapply(names(res_list[[q]]), function(rnd) {
             extract_facet(res_list[[q]][[rnd]], "cdf_emp_w", rnd)}))}))
       
-      
       cdf_beta_all <- bind_rows(
         lapply(names(res_list), function(q) {
           bind_rows(lapply(names(res_list[[q]]), function(rnd) {
             extract_facet(res_list[[q]][[rnd]], "cdf_beta", rnd)}))}))
-      
       
       cdf_beta_w_all <- bind_rows(
         lapply(names(res_list), function(q) {
@@ -681,12 +708,8 @@ server <- function(input, output, session) {
         lapply(names(res_list), function(q) {
           bind_rows(lapply(names(res_list[[q]]), function(rnd) {
             extract_facet(res_list[[q]][[rnd]], "cdf_individual", rnd)}))}))
-      
-      
-      # -------------------------------------------------------------------------
+
       # Add round-specific facet labels
-      # -------------------------------------------------------------------------
-      
       plot_objects <- c(
         "dens_mix_all",
         "dens_mix_w_all",
@@ -703,20 +726,10 @@ server <- function(input, output, session) {
       )
       
       for (obj in plot_objects) {
-        
         tmp <- get(obj)
-        
         if (all(c("Facet_Label", "Round") %in% names(tmp))) {
-          
           tmp <- tmp %>%
-            mutate(
-              Facet_Label_Round = paste0(
-                Facet_Label,
-                "\nRound ",
-                Round
-              )
-            )
-          
+            mutate(Facet_Label_Round = paste0( Facet_Label, "\nRound ", Round) )
           assign(obj, tmp)
         }
       }
@@ -1193,6 +1206,24 @@ server <- function(input, output, session) {
             df = df_q,
             id_col = input$col_id,
             response_col = input$col_response,
+            round_col = if (
+              !is.null(input$col_round) &&
+              input$col_round != "<none>"
+            ) {
+              input$col_round
+            } else {
+              NULL
+            }
+          )
+        
+      } else if (q_type == "ranking") {
+        
+        plots[[length(plots) + 1]] <-
+          build_ranking_individuals_plot(
+            df = df_q,
+            id_col = input$col_id,
+            option_col = input$col_option,
+            rank_col = input$col_rank,
             round_col = if (
               !is.null(input$col_round) &&
               input$col_round != "<none>"

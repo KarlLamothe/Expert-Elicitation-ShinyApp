@@ -528,3 +528,27 @@ summarize_question_yesno <- function(df, id_col, response_col, AC_col = NULL,
                         N_Participants = n_participants)
   list(summary = summary_tbl)
 }
+
+###############################################################################
+# Ranking
+###############################################################################
+summarize_question_ranking <- function(
+    df,
+    id_col,
+    option_col,
+    rank_col,
+    AC_col = NULL,
+    question_label = NULL,
+    question_type = "ranking"
+) {
+  
+  summary_tbl <- tibble(
+    Question = question_label,
+    Question_Type = question_type,
+    N_Participants = dplyr::n_distinct(df[[id_col]])
+  )
+  
+  list(
+    summary = summary_tbl
+  )
+}
