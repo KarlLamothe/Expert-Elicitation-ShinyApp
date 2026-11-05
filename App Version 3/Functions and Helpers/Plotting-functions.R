@@ -146,6 +146,7 @@ build_probability_density_plot <- function(df_mix,
                                            show_AC_mix = TRUE) {
   
   p <- ggplot() + 
+
     geom_line(data = df_mix, aes(x = p, y = density,
                                  colour = "Equal-weight mixture",
                                  linetype = "Equal-weight mixture"), linewidth = 0.8) +
@@ -168,8 +169,8 @@ build_probability_density_plot <- function(df_mix,
   
   if (show_individual &&
       !is.null(df_ind)) {
-    p <- p + geom_line(data = df_ind, aes(x = p, y = density, group = id),
-                       alpha = 0.4,colour = "grey60")
+    p <- p + geom_line(data = df_ind, aes(x = p, y = density, group = interaction(id, Question_Round)),
+                       alpha = 0.4,colour = "grey60",  linewidth = 0.4)
   }
   
   if (show_beta &&
@@ -203,8 +204,6 @@ build_numeric_density_plot <- function(df_mix,
                                        show_individual = TRUE,
                                        show_AC_mix = TRUE) {
   
-  
-  
   p <- ggplot() + 
     scale_colour_manual(name = NULL, breaks = c("Equal-weight mixture",
                                                 "AC-weighted mixture"),
@@ -215,7 +214,7 @@ build_numeric_density_plot <- function(df_mix,
   
   if (show_individual &&
       !is.null(df_ind)) {
-    p <- p + geom_line(data = df_ind, aes(x = p,y = density, group = id),
+    p <- p + geom_line(data = df_ind, aes(x = p,y = density, group = interaction(id, Question_Round)),
                        alpha = 0.4,colour = "grey60") 
   }
   
@@ -378,7 +377,7 @@ build_probability_cdf_plot <- function(df_mix,
   
   if (show_individual &&
       !is.null(df_ind)) {
-    p <- p + geom_line(data = df_ind, aes(x = p, y = cdf, group = id),
+    p <- p + geom_line(data = df_ind, aes(x = p, y = cdf, group = interaction(id, Question_Round)),
                        alpha = 0.4, colour = "grey60")
   }
   
@@ -428,7 +427,7 @@ build_numeric_cdf_plot <- function(df_mix,
   if (show_individual &&
       !is.null(df_ind)) {
     
-    p <- p + geom_line(data = df_ind, aes(x = p,  y = cdf, group = id),
+    p <- p + geom_line(data = df_ind, aes(x = p,  y = cdf, group = interaction(id, Question_Round)),
                        alpha = 0.4,  colour = "grey60")
   }
   
@@ -450,4 +449,68 @@ build_numeric_cdf_plot <- function(df_mix,
   }
   
   p
+}
+
+###############################################################################
+###############################################################################
+###############################################################################
+# Yes / No Expert Estimates
+###############################################################################
+
+build_yesno_individuals_plot <- function(df,id_col, response_col, round_col = NULL) {
+  
+  df_plot <- df %>%
+    transmute(Participant = .data[[id_col]],
+              Response = factor(.data[[response_col]],levels = c("No", "Yes")),
+              Question = .data[["Question"]],
+              Round = if (!is.null(round_col))
+                .data[[round_col]] else 1) %>%
+    mutate(Round_Label = paste0("Question ", Question, "\nRound ", Round))
+  
+  p <- ggplot(df_plot, aes(x = 1, y = Participant, fill = Response)) +
+    geom_tile(colour = "white", linewidth = 0.5) +
+    geom_text(aes(label = Response), colour = "white", 
+              fontface = "bold", size = 6) +
+    scale_fill_manual(values = c("Yes" = "#245674", "No"  = "#A65E00")) +
+    labs(x = NULL, y = "Participant", fill = NULL) +
+    theme(axis.text.x = element_blank(),
+          axis.ticks.x = element_blank(),
+          panel.grid = element_blank(),
+          axis.text.y = element_blank(), 
+          axis.ticks.y = element_blank(),
+          legend.position = 'none')
+  
+  if (!is.null(round_col)) {
+    p <- p + facet_wrap(~ Round_Label, ncol = 1)
+  }
+  p
+}
+
+
+###############################################################################
+###############################################################################
+# Yes / No pooled plot
+###############################################################################
+###############################################################################
+
+build_yesno_plot <- function(summary_df) {
+  
+  df_plot <- summary_df %>%
+    select(Question, Round, EqW_Yes, EqW_No, ACW_Yes, ACW_No) %>%
+    tidyr::pivot_longer(cols = c(EqW_Yes, EqW_No, ACW_Yes, ACW_No),
+                        names_to = "Metric", values_to = "Proportion") %>%
+    mutate(Method = ifelse(grepl("^EqW", Metric), "Equal-weight","AC-weighted"),
+           Response = ifelse(grepl("Yes$", Metric),"Yes", "No"),
+           Round_Label = paste0("Question ", Question,"\nRound ",Round))%>%
+    mutate(Method = factor(Method, levels = c("Equal-weight", "AC-weighted")))
+  
+  ggplot(df_plot, aes(x = Method, y = Proportion, fill = Response)) +
+    geom_col(width = 0.7, position = "fill") +
+    geom_text(aes(label = scales::percent(Proportion, accuracy = 1)),
+              position = position_stack(vjust = 0.5), colour = "white",
+              fontface = "bold", size=6)+
+    scale_y_continuous(limits = c(0, 1), labels = scales::percent) +
+    scale_fill_manual(values = c("Yes" = "#245674", "No" = "#D55E00")) +
+    labs(x = NULL, y = "Proportion", fill = NULL) +
+    facet_wrap(~ Round_Label, ncol = 1)
 }

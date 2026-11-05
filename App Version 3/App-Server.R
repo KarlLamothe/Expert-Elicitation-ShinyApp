@@ -183,7 +183,8 @@ server <- function(input, output, session) {
     }
     q_selected <- input$question_multi
     txt <- df %>%
-      dplyr::filter(Question == q_selected) %>%
+      dplyr::filter(as.character(.data[[input$col_question]]) ==
+                      as.character(q_selected)) %>%
       dplyr::pull(Question_Text) %>%
       unique()
     if (length(txt) == 0) {
@@ -252,6 +253,12 @@ server <- function(input, output, session) {
                                       cols,ignore.case = TRUE, value = TRUE)
                           if (length(hit) > 0) hit[1] else "<none>"
                           }),
+            selectInput("col_response", "Response column (Yes/No questions)",
+                        choices = c("<none>", cols), selected = {
+                          hit <- grep("^Response$|Answer|Vote", cols,
+                                      ignore.case = TRUE, value = TRUE)
+                if (length(hit) > 0) hit[1] else "<none>"
+              }),
             selectInput("col_id", "Participant identifier column",
                         choices = cols,
                         selected = if ("Participant" %in% cols)
@@ -358,6 +365,7 @@ server <- function(input, output, session) {
       lpp_col = input$col_lpp,
       bgp_col = input$col_bgp,
       hpp_col = input$col_hpp,
+      response_col = input$col_response,
       AC_col = AC_col_val,
       round_col = round_col_val)
     
@@ -391,21 +399,39 @@ server <- function(input, output, session) {
     # -------------------------------------------------------------------------
     if (is.null(round_col_val)) {
       res_list <- lapply(qs, function(q) {
+        
         q_type <- get_question_type(as.character(q), question_types)
         df_q <- df %>%
           filter(.data[[q_col]] == q)
-        summarize_question_pert(
-          df_q,
-          id_col  = input$col_id,
-          lpp_col = input$col_lpp,
-          bgp_col = input$col_bgp,
-          hpp_col = input$col_hpp,
-          AC_col = AC_col_val,
-          lambda  = input$lambda,
-          Nsim    = input$Nsim,
-          seed    = NULL,
-          question_label = as.character(q),
-          question_type = q_type)
+        
+        if (q_type == "yesno") {
+          
+          summarize_question_yesno(
+            df_q,
+            id_col = input$col_id,
+            response_col = input$col_response,
+            AC_col = AC_col_val,
+            question_label = as.character(q),
+            question_type = q_type
+          )
+          
+        } else {
+          
+          summarize_question_pert(
+            df_q,
+            id_col = input$col_id,
+            lpp_col = input$col_lpp,
+            bgp_col = input$col_bgp,
+            hpp_col = input$col_hpp,
+            AC_col = AC_col_val,
+            lambda = input$lambda,
+            Nsim = input$Nsim,
+            seed = NULL,
+            question_label = as.character(q),
+            question_type = q_type
+          )
+          
+        }
       })
       names(res_list) <- as.character(qs)
       
@@ -422,19 +448,38 @@ server <- function(input, output, session) {
         round_results <- lapply(rounds_q, function(r) {
           df_qr <- df_q %>%
             filter(.data[[round_col_val]] == r)
-          summarize_question_pert(
-            df_qr,
-            id_col  = input$col_id,
-            lpp_col = input$col_lpp,
-            bgp_col = input$col_bgp,
-            hpp_col = input$col_hpp,
-            AC_col = AC_col_val,
-            lambda  = input$lambda,
-            Nsim    = input$Nsim,
-            seed    = NULL,
-            question_label = as.character(q),
-            question_type = q_type)
-        })
+          
+          if (q_type == "yesno") {
+            
+            summarize_question_yesno(
+              df_qr,
+              id_col = input$col_id,
+              response_col = input$col_response,
+              AC_col = AC_col_val,
+              question_label = as.character(q),
+              question_type = q_type
+            )
+            
+          } else {
+            
+            summarize_question_pert(
+              df_qr,
+              id_col = input$col_id,
+              lpp_col = input$col_lpp,
+              bgp_col = input$col_bgp,
+              hpp_col = input$col_hpp,
+              AC_col = AC_col_val,
+              lambda = input$lambda,
+              Nsim = input$Nsim,
+              seed = NULL,
+              question_label = as.character(q),
+              question_type = q_type
+            )
+            
+          }
+            
+          }
+        )
         names(round_results) <- as.character(rounds_q)
         round_results
       })
@@ -566,82 +611,77 @@ server <- function(input, output, session) {
         lapply(names(res_list), function(q) {
           bind_rows(lapply(names(res_list[[q]]), function(rnd) {
               res_list[[q]][[rnd]]$summary %>%
-                mutate(Round = rnd, .after = Question)
-            }))
-        })
-      )
+                mutate(Round = rnd, .after = Question)}))}))
 
       dens_mix_all <- bind_rows(
         lapply(names(res_list), function(q) {
           bind_rows(lapply(names(res_list[[q]]), function(rnd) {
-              res_list[[q]][[rnd]]$facet$mixture %>%
-                mutate(Round = rnd, .after = Question)}))}))
+            extract_facet(res_list[[q]][[rnd]], "mixture", rnd)}))}))
       
       dens_mix_w_all <- bind_rows(
         lapply(names(res_list), function(q) {
           bind_rows(lapply(names(res_list[[q]]), function(rnd) {
-              res_list[[q]][[rnd]]$facet$mixture_w %>%
-                mutate(Round = rnd, .after = Question)}))}))
+            extract_facet(res_list[[q]][[rnd]], "mixture_w", rnd)}))}))
+      
       
       dens_ind_all <- bind_rows(
         lapply(names(res_list), function(q) {
           bind_rows(lapply(names(res_list[[q]]), function(rnd) {
-              res_list[[q]][[rnd]]$facet$individual %>%
-                mutate(Round = rnd, .after = Question)}))}))
+            extract_facet(res_list[[q]][[rnd]], "individual", rnd)}))}))
+      
       
       beta_all <- bind_rows(
         lapply(names(res_list), function(q) {
           bind_rows(lapply(names(res_list[[q]]), function(rnd) {
-              res_list[[q]][[rnd]]$facet$beta %>%
-                mutate(Round = rnd, .after = Question)}))}))
+            extract_facet(res_list[[q]][[rnd]], "beta", rnd)}))}))
+      
       
       beta_w_all <- bind_rows(
         lapply(names(res_list), function(q) {
           bind_rows(lapply(names(res_list[[q]]), function(rnd) {
-              res_list[[q]][[rnd]]$facet$beta_w %>%
-                mutate(Round = rnd, .after = Question)}))}))
+            extract_facet(res_list[[q]][[rnd]], "beta_w", rnd)}))}))
+      
       
       cdf_mix_all <- bind_rows(
         lapply(names(res_list), function(q) {
           bind_rows(lapply(names(res_list[[q]]), function(rnd) {
-              res_list[[q]][[rnd]]$facet$cdf_mixture %>%
-                mutate(Round = rnd, .after = Question)}))}))
+            extract_facet(res_list[[q]][[rnd]], "cdf_mixture", rnd)}))}))
+      
       
       cdf_mix_w_all <- bind_rows(
         lapply(names(res_list), function(q) {
           bind_rows(lapply(names(res_list[[q]]), function(rnd) {
-              res_list[[q]][[rnd]]$facet$cdf_mixture_w %>%
-                mutate(Round = rnd, .after = Question)}))}))
+            extract_facet(res_list[[q]][[rnd]], "cdf_mixture_w", rnd)}))}))
+      
       
       cdf_emp_all <- bind_rows(
         lapply(names(res_list), function(q) {
           bind_rows(lapply(names(res_list[[q]]), function(rnd) {
-              res_list[[q]][[rnd]]$facet$cdf_emp %>%
-                mutate(Round = rnd, .after = Question)}))}))
+            extract_facet(res_list[[q]][[rnd]], "cdf_emp", rnd)}))}))
+      
       
       cdf_emp_w_all <- bind_rows(
         lapply(names(res_list), function(q) {
           bind_rows(lapply(names(res_list[[q]]), function(rnd) {
-              res_list[[q]][[rnd]]$facet$cdf_emp_w %>%
-                mutate(Round = rnd, .after = Question)}))}))
+            extract_facet(res_list[[q]][[rnd]], "cdf_emp_w", rnd)}))}))
+      
       
       cdf_beta_all <- bind_rows(
         lapply(names(res_list), function(q) {
           bind_rows(lapply(names(res_list[[q]]), function(rnd) {
-              res_list[[q]][[rnd]]$facet$cdf_beta %>%
-                mutate(Round = rnd, .after = Question)}))}))
+            extract_facet(res_list[[q]][[rnd]], "cdf_beta", rnd)}))}))
+      
       
       cdf_beta_w_all <- bind_rows(
         lapply(names(res_list), function(q) {
           bind_rows(lapply(names(res_list[[q]]), function(rnd) {
-              res_list[[q]][[rnd]]$facet$cdf_beta_w %>%
-                mutate(Round = rnd, .after = Question)}))}))
+            extract_facet(res_list[[q]][[rnd]], "cdf_beta_w", rnd)}))}))
       
       cdf_ind_all <- bind_rows(
         lapply(names(res_list), function(q) {
           bind_rows(lapply(names(res_list[[q]]), function(rnd) {
-              res_list[[q]][[rnd]]$facet$cdf_individual %>%
-                mutate(Round = rnd, .after = Question)}))}))
+            extract_facet(res_list[[q]][[rnd]], "cdf_individual", rnd)}))}))
+      
       
       # -------------------------------------------------------------------------
       # Add round-specific facet labels
@@ -704,60 +744,33 @@ server <- function(input, output, session) {
                           function(rnd) {
                             paste0("Question ", qs_block, "\nRound ", rnd)}))}))
       
-      cdf_mix_all <- cdf_mix_all %>%
-        mutate(Question_Round = factor(paste0(
-          "Question ", Question,"\nRound ", Round),
-            levels = question_round_levels))
+      add_question_round <- function(df, levels) {
+        if (is.null(df) ||
+            nrow(df) == 0 ||
+            !all(c("Question", "Round") %in% names(df))) {
+          return(df)
+        }
+        
+        df %>%
+          mutate(Question_Round = factor(paste0(
+            "Question ", Question, "\nRound ", Round), levels = levels))
+      }
       
-      cdf_mix_w_all <- cdf_mix_w_all %>%
-        mutate(Question_Round = factor(
-          paste0("Question ", Question, "\nRound ", Round),
-          levels = question_round_levels))
+      cdf_mix_all   <- add_question_round(cdf_mix_all, question_round_levels)
+      cdf_mix_w_all <- add_question_round(cdf_mix_w_all, question_round_levels)
+      cdf_emp_all   <- add_question_round(cdf_emp_all, question_round_levels)
+      cdf_emp_w_all <- add_question_round(cdf_emp_w_all, question_round_levels)
       
-      cdf_emp_all <- cdf_emp_all %>%
-        mutate(Question_Round = factor(
-          paste0("Question ", Question, "\nRound ", Round),
-          levels = question_round_levels))
+      cdf_beta_all  <- add_question_round(cdf_beta_all, question_round_levels)
+      cdf_beta_w_all <- add_question_round(cdf_beta_w_all, question_round_levels)
+      cdf_ind_all   <- add_question_round(cdf_ind_all, question_round_levels)
       
-      cdf_emp_w_all <- cdf_emp_w_all %>%
-        mutate(Question_Round = factor(
-          paste0("Question ", Question, "\nRound ", Round),
-          levels = question_round_levels))
+      dens_mix_all  <- add_question_round(dens_mix_all, question_round_levels)
+      dens_mix_w_all <- add_question_round(dens_mix_w_all, question_round_levels)
+      dens_ind_all  <- add_question_round(dens_ind_all, question_round_levels)
       
-      cdf_beta_all <- cdf_beta_all %>%
-        mutate(Question_Round = factor(
-          paste0("Question ", Question, "\nRound ", Round), 
-          levels = question_round_levels))
-      
-      cdf_beta_w_all <- cdf_beta_w_all %>%
-        mutate(Question_Round = factor(
-          paste0("Question ", Question, "\nRound ", Round), 
-          levels = question_round_levels))
-      
-      cdf_ind_all <- cdf_ind_all %>%
-        mutate(Question_Round = factor(
-          paste0("Question ", Question, "\nRound ", Round),
-          levels = question_round_levels))
-      
-      dens_mix_all <- dens_mix_all %>%
-        mutate(Question_Round = factor(
-          paste0("Question ", Question, "\nRound ", Round),
-          levels = question_round_levels))
-      
-      dens_mix_w_all <- dens_mix_w_all %>%
-        mutate(Question_Round = factor(
-          paste0("Question ", Question, "\nRound ", Round),
-          levels = question_round_levels))
-      
-      dens_ind_all <- dens_ind_all %>%
-        mutate(Question_Round = factor(
-          paste0("Question ", Question, "\nRound ", Round),
-          levels = question_round_levels))
-      
-      beta_all <- beta_all %>%
-        mutate(Question_Round = factor(
-          paste0("Question ", Question, "\nRound ", Round),
-          levels = question_round_levels ))
+      beta_all      <- add_question_round(beta_all, question_round_levels)
+      beta_w_all    <- add_question_round(beta_w_all, question_round_levels)
     }
     
     list(
@@ -778,6 +791,16 @@ server <- function(input, output, session) {
     )
   }, ignoreInit = TRUE)
   
+  filter_round <- function(df, selected_round) {
+    if (is.null(df) ||
+        nrow(df) == 0 ||
+        !"Round" %in% names(df)) {
+      return(df)
+    }
+    df %>%
+      filter(as.character(Round) == selected_round)
+  }
+  
   plot_results <- reactive({
     req(results())
     r <- results()
@@ -791,46 +814,26 @@ server <- function(input, output, session) {
       r$summaries <- r$summaries %>%
         filter(as.character(Round) == selected_round)
       
-      r$dens_mix_all <- r$dens_mix_all %>%
-        filter(as.character(Round) == selected_round)
+      r$dens_mix_all   <- filter_round(r$dens_mix_all, selected_round)
+      r$dens_mix_w_all <- filter_round(r$dens_mix_w_all, selected_round)
+      r$dens_ind_all   <- filter_round(r$dens_ind_all, selected_round)
       
-      r$dens_mix_w_all <- r$dens_mix_w_all %>%
-        filter(as.character(Round) == selected_round)
+      r$beta_all       <- filter_round(r$beta_all, selected_round)
+      r$beta_w_all     <- filter_round(r$beta_w_all, selected_round)
       
-      r$dens_ind_all <- r$dens_ind_all %>%
-        filter(as.character(Round) == selected_round)
+      r$cdf_mix_all    <- filter_round(r$cdf_mix_all, selected_round)
+      r$cdf_mix_w_all  <- filter_round(r$cdf_mix_w_all, selected_round)
       
-      r$beta_all <- r$beta_all %>%
-        filter(as.character(Round) == selected_round)
+      r$cdf_emp_all    <- filter_round(r$cdf_emp_all, selected_round)
+      r$cdf_emp_w_all  <- filter_round(r$cdf_emp_w_all, selected_round)
       
-      r$beta_w_all <- r$beta_w_all %>%
-        filter(as.character(Round) == selected_round)
+      r$cdf_beta_all   <- filter_round(r$cdf_beta_all, selected_round)
+      r$cdf_beta_w_all <- filter_round(r$cdf_beta_w_all, selected_round)
       
-      r$cdf_mix_all <- r$cdf_mix_all %>%
-        filter(as.character(Round) == selected_round)
+      r$cdf_ind_all    <- filter_round(r$cdf_ind_all, selected_round)
       
-      r$cdf_mix_w_all <- r$cdf_mix_w_all %>%
-        filter(as.character(Round) == selected_round)
-      
-      r$cdf_emp_all <- r$cdf_emp_all %>%
-        filter(as.character(Round) == selected_round)
-      
-      r$cdf_emp_w_all <- r$cdf_emp_w_all %>%
-        filter(as.character(Round) == selected_round)
-      
-      r$cdf_beta_all <- r$cdf_beta_all %>%
-        filter(as.character(Round) == selected_round)
-      
-      r$cdf_beta_w_all <- r$cdf_beta_w_all %>%
-        filter(as.character(Round) == selected_round)
-      
-      r$cdf_ind_all <- r$cdf_ind_all %>%
-        filter(as.character(Round) == selected_round)
-      
-      r$samples_all <- r$samples_all %>%
-        filter(as.character(Round) == selected_round)
+      r$samples_all    <- filter_round(r$samples_all, selected_round)
     }
-    
     r
   })
   
@@ -1183,6 +1186,23 @@ server <- function(input, output, session) {
               NULL
             }
           )
+      } else if (q_type == "yesno") {
+        
+        plots[[length(plots) + 1]] <-
+          build_yesno_individuals_plot(
+            df = df_q,
+            id_col = input$col_id,
+            response_col = input$col_response,
+            round_col = if (
+              !is.null(input$col_round) &&
+              input$col_round != "<none>"
+            ) {
+              input$col_round
+            } else {
+              NULL
+            }
+          )
+        
       }
     }
     
@@ -1276,6 +1296,11 @@ server <- function(input, output, session) {
             show_individual = isTRUE(input$show_individual),
             show_AC_mix = isTRUE(input$show_AC_mix)
           )
+      } else if (q_type == "yesno") {
+        
+        summary_q <- r$summaries %>%
+          filter(as.character(Question) == q)
+        plots[[length(plots) + 1]] <- build_yesno_plot(summary_q)
       }
     }
     # Assemble
@@ -1359,6 +1384,14 @@ server <- function(input, output, session) {
             dens_mix = dens_mix_q,
             dens_mix_w = dens_mix_w_q,
             show_AC_mix = isTRUE(input$show_AC_mix))
+       } else if (q_type == "yesno") {
+        
+        summary_q <- r$summaries %>%
+          filter(as.character(Question) == q)
+        
+        plots[[length(plots) + 1]] <-
+          build_yesno_plot(summary_q)
+        
       }
     }
     
@@ -1445,6 +1478,14 @@ server <- function(input, output, session) {
             show_individual = isTRUE(input$show_individual),
             show_AC_mix = isTRUE(input$show_AC_mix)
           )
+      } else if (q_type == "yesno") {
+        
+        summary_q <- r$summaries %>%
+          filter(as.character(Question) == q)
+        
+        plots[[length(plots) + 1]] <-
+          build_yesno_plot(summary_q)
+        
       }
     }
     

@@ -477,3 +477,54 @@ summarize_question_pert <- function(df,
     AC_unavailable_reason = AC_unavailable_reason
   )
 }
+
+###############################################################################
+# Yes / No questions
+###############################################################################
+
+summarize_question_yesno <- function(df, id_col, response_col, AC_col = NULL,
+                                     question_label = NULL, question_type = "yesno") {
+  
+  response_bin <- tolower(trimws(as.character(df[[response_col]])))
+  response_bin <- dplyr::case_when(
+    response_bin %in% c("yes", "y", "true", "1") ~ 1,
+    response_bin %in% c("no", "n", "false", "0") ~ 0,
+    TRUE ~ NA_real_)
+  
+  n_participants <- sum(!is.na(response_bin))
+  
+  # Assessment confidence
+  if (!is.null(AC_col) &&
+      AC_col %in% names(df)) {
+    AC <- suppressWarnings(as.numeric(df[[AC_col]]))
+    AC[is.na(AC)] <- 100
+    valid_ac <- !is.na(response_bin)
+    AC_available <- sum(valid_ac) >= 2
+  } else {
+    AC <- rep(100, nrow(df))
+    valid_ac <- !is.na(response_bin)
+    AC_available <- FALSE
+  }
+  
+  # Equal-weight pooling
+  p_yes <- mean(response_bin, na.rm = TRUE)
+  
+  # AC-weighted pooling
+  p_yes_ac <- if (AC_available) {
+    weighted.mean(response_bin[valid_ac], w = AC[valid_ac])
+  } else {
+    NA_real_
+  }
+  
+  # Summary output
+  summary_tbl <- tibble(Question = question_label,
+                        Question_Type = question_type,
+                        EqW_Yes = p_yes,
+                        EqW_No = 1 - p_yes,
+                        ACW_Yes = p_yes_ac,
+                        ACW_No = if (is.na(p_yes_ac)) NA_real_ else 1 - p_yes_ac,
+                        Mean_AC = mean(AC, na.rm = TRUE),
+                        Median_AC = median(AC, na.rm = TRUE),
+                        N_Participants = n_participants)
+  list(summary = summary_tbl)
+}

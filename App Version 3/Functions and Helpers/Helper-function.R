@@ -43,8 +43,8 @@ best_question_col <- function(df) {
 #############################################################################
 
 validate_elicitation_data <- function(df, id_col, question_col, lpp_col,
-                                      bgp_col, hpp_col, AC_col = NULL,
-                                      round_col = NULL) {
+                                      bgp_col, hpp_col, response_col = NULL,
+                                      AC_col = NULL, round_col = NULL) {
   problems <- character(0)
   # -------------------------------------------------------------------------
   # Extract and standardize mapped columns
@@ -56,6 +56,14 @@ validate_elicitation_data <- function(df, id_col, question_col, lpp_col,
     } else {
       "probability"
     },
+    
+    Response = if (!is.null(response_col) &&
+                   !identical(response_col, "<none>") &&
+                   response_col %in% names(df)) {df[[response_col]]
+      } else {
+      NA_character_
+    },
+    
     Participant = df[[id_col]],
     LPP = suppressWarnings(as.numeric(df[[lpp_col]])),
     BGP = suppressWarnings(as.numeric(df[[bgp_col]])),
@@ -112,6 +120,7 @@ validate_elicitation_data <- function(df, id_col, question_col, lpp_col,
   for (i in seq_len(nrow(check_df))) {
     label <- response_label(i)
     question_type <- tolower(as.character(check_df$Question_Type[i]))
+    
     # Required identifiers
     if (is.na(check_df$Question[i]) ||
         trimws(as.character(check_df$Question[i])) == "") {
@@ -130,7 +139,18 @@ validate_elicitation_data <- function(df, id_col, question_col, lpp_col,
          trimws(as.character(check_df$Round[i])) == "")) {
       problems <- c(problems, paste0(label, ": Elicitation round is missing."))
     }
-    
+
+    # Yes/No questions
+    if (question_type == "yesno") {
+      response <- trimws(tolower(as.character(check_df$Response[i])))
+      valid_responses <- c("yes", "y", "no", "n","true", "false","1", "0")
+      if (is.na(response) || response == "") {
+        problems <- c(problems, paste0( label, ": Response is missing."))
+      } else if (!(response %in% valid_responses)) {
+        problems <- c(problems, paste0( label, ": Response must be Yes or No." ))
+      }
+      next
+    }
     # -----------------------------------------------------------------------
     # Missing probability estimates
     # -----------------------------------------------------------------------
@@ -339,4 +359,25 @@ filter_selected_questions <- function(df, selected_questions, question_col) {
           as.character(sel))
   }
   df
+}
+
+standardize_yesno <- function(x) {
+  x <- trimws(tolower(as.character(x)))
+  case_when(
+    x %in% c("yes","y","true","1") ~ 1,
+    x %in% c("no","n","false","0") ~ 0,
+    TRUE ~ NA_real_
+  )
+}
+
+extract_facet <- function(obj, facet_name, rnd) {
+  if (is.null(obj$facet)) {
+    return(NULL)
+  }
+  x <- obj$facet[[facet_name]]
+  if (is.null(x)) {
+    return(NULL)
+  }
+  x %>%
+    mutate(Round = rnd, .after = Question)
 }
