@@ -126,7 +126,12 @@ server <- function(input, output, session) {
       return(NULL)
     }
     # Version 3 compatibility
-    if (!"Question_Type" %in% names(df)) {
+    if (!is.null(input$col_question_type) &&
+        input$col_question_type != "<none>" &&
+        input$col_question_type %in% names(df)) {
+      
+      names(df)[names(df) == input$col_question_type] <- "Question_Type"
+    } else if (!"Question_Type" %in% names(df)) {
       df$Question_Type <- "probability"
     }
     df
@@ -141,11 +146,22 @@ server <- function(input, output, session) {
   question_metadata <- reactive({
     df <- raw_df()
     req(df)
-    if (!"Question" %in% names(df)) {
+    if (is.null(input$col_question) ||
+        input$col_question == "<none>") {
       return(NULL)
     }
-    df %>%
-      distinct(Question, Question_Type)
+    q_col <- input$col_question
+    if (!is.null(input$col_question_type) &&
+        input$col_question_type != "<none>" &&
+        input$col_question_type %in% names(df)) {
+      df %>%
+        distinct(Question = .data[[q_col]],
+                 Question_Type = .data[[input$col_question_type]])
+    } else {
+      df %>%
+        distinct( Question = .data[[q_col]]) %>%
+        mutate(Question_Type = "probability")
+    }
   })
 
   get_question_type <- function(question_id, metadata) {
@@ -223,6 +239,12 @@ server <- function(input, output, session) {
                         choices = c("<none>", cols),
                         selected = if (default_question %in% cols)
                           default_question else "<none>"),
+            selectInput("col_question_type", "Question type column",
+                        choices = c("<none>", cols), selected = {
+                          hit <- grep("^Question_Type$|Question.*Type",
+                                      cols, ignore.case = TRUE, value = TRUE)
+                          if (length(hit) > 0) hit[1] else "<none>"
+                          }),
             selectInput("col_question_text", "Question text column (optional)",
                         choices = c("<none>", cols),
                         selected = {
@@ -1106,6 +1128,8 @@ server <- function(input, output, session) {
         filter(as.character(.data[[input$col_round]]) ==
             as.character(input$round_filter))
     }
+
+    df_plot <- filter_selected_questions(df_plot, input$question_multi, input$col_question)
     
     # Split into individual questions
     question_list <- split(df_plot, as.character(df_plot[[input$col_question]]))
@@ -1172,16 +1196,51 @@ server <- function(input, output, session) {
   output$plot_density <- renderPlot({
     req(plot_results())
     r <- plot_results()
-    questions <- unique(as.character(r$summaries$Question))
     plots <- list()
     
+    # Filter to selected questions
+    if (!is.null(input$question_multi)) {
+      sel <- setdiff(input$question_multi, "All")
+      if (length(sel) > 0) {
+        r$summaries <- r$summaries %>%
+          filter(as.character(Question) %in% as.character(sel))
+        
+        r$samples_all <- r$samples_all %>%
+          filter(as.character(Question) %in% as.character(sel))
+        
+        r$dens_mix_all <- r$dens_mix_all %>%
+          filter(as.character(Question) %in% as.character(sel))
+        
+        r$dens_mix_w_all <- r$dens_mix_w_all %>%
+          filter(as.character(Question) %in% as.character(sel))
+        
+        r$dens_ind_all <- r$dens_ind_all %>%
+          filter(as.character(Question) %in% as.character(sel))
+        
+        r$beta_all <- r$beta_all %>%
+          filter(as.character(Question) %in% as.character(sel))}}
+
+    # Determine questions after filtering
+    questions <- unique(as.character(r$summaries$Question))
+  
+    # Build one plot per question
     for (q in questions) {
+      
+      if (nrow(
+        r$summaries %>% filter(as.character(Question) == q)) == 0) {
+        next
+      }
+      
       q_type <- r$summaries %>%
         filter(as.character(Question) == q) %>%
         pull(Question_Type) %>%
         unique() %>%
         .[1]
       
+      if (is.na(q_type)) {
+        next
+      }
+
       dens_mix_q <- r$dens_mix_all %>%
         filter(as.character(Question) == q)
       
@@ -1219,25 +1278,55 @@ server <- function(input, output, session) {
           )
       }
     }
-    
-    patchwork::wrap_plots(plots, ncol = length(plots)) +
-      patchwork::plot_layout(guides="collect")    
+    # Assemble
+    patchwork::wrap_plots(plots,ncol = length(plots)) +
+      patchwork::plot_layout(guides = "collect")
   })
   
   # Plots: Histogram + Beta fit (faceted by full label)
   output$plot_hist <- renderPlot({
     req(plot_results())
     r <- plot_results()
-    questions <- unique(as.character(r$summaries$Question))
     plots <- list()
     
+    if (!is.null(input$question_multi)) {
+      sel <- setdiff(input$question_multi, "All")
+      if (length(sel) > 0) {
+        r$summaries <- r$summaries %>%
+          filter(as.character(Question) %in% as.character(sel))
+        
+        r$samples_all <- r$samples_all %>%
+          filter(as.character(Question) %in% as.character(sel))
+        
+        r$dens_mix_all <- r$dens_mix_all %>%
+          filter(as.character(Question) %in% as.character(sel))
+        
+        r$dens_mix_w_all <- r$dens_mix_w_all %>%
+          filter(as.character(Question) %in% as.character(sel))
+        
+        r$beta_all <- r$beta_all %>%
+          filter(as.character(Question) %in% as.character(sel))
+      }
+    }
+ 
+    questions <- unique(as.character(r$summaries$Question))
+    
     for (q in questions) {
+      
+      if (nrow(
+        r$summaries %>% filter(as.character(Question) == q)) == 0) {
+        next
+      }
       
       q_type <- r$summaries %>%
         filter(as.character(Question) == q) %>%
         pull(Question_Type) %>%
         unique() %>%
         .[1]
+      
+      if (is.na(q_type)) {
+        next
+      }
       
       samples_q <- r$samples_all %>%
         filter(as.character(Question) == q)
@@ -1282,15 +1371,44 @@ server <- function(input, output, session) {
   output$plot_cdf <- renderPlot({
     req(plot_results())
     r <- plot_results()
-    questions <- unique(as.character(r$summaries$Question))
     plots <- list()
     
+    if (!is.null(input$question_multi)) {
+      sel <- setdiff(input$question_multi, "All")
+      if (length(sel) > 0) {
+        r$summaries <- r$summaries %>%
+          filter(as.character(Question) %in% as.character(sel))
+        r$samples_all <- r$samples_all %>%
+          filter(as.character(Question) %in% as.character(sel))
+        r$cdf_mix_all <- r$cdf_mix_all %>%
+          filter(as.character(Question) %in% as.character(sel))
+        r$cdf_mix_w_all <- r$cdf_mix_w_all %>%
+          filter(as.character(Question) %in% as.character(sel))
+        r$cdf_ind_all <- r$cdf_ind_all %>%
+          filter(as.character(Question) %in% as.character(sel))
+        r$cdf_beta_all <- r$cdf_beta_all %>%
+          filter(as.character(Question) %in% as.character(sel))
+      }
+    }
+    
+    questions <- unique(as.character(r$summaries$Question))
+
     for (q in questions) {
+      
+      if (nrow(
+        r$summaries %>% filter(as.character(Question) == q)) == 0) {
+        next
+      }
+      
       q_type <- r$summaries %>%
         filter(as.character(Question) == q) %>%
         pull(Question_Type) %>%
         unique() %>%
         .[1]
+      
+      if (is.na(q_type)) {
+        next
+      }
       
       cdf_mix_q <- r$cdf_mix_all %>%
         filter(as.character(Question) == q)

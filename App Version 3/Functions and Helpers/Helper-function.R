@@ -330,3 +330,13 @@ validate_elicitation_data <- function(df, id_col, question_col, lpp_col,
 choose_round_facet_cols <- function(n_questions) {
   n_questions
 }
+
+filter_selected_questions <- function(df, selected_questions, question_col) {
+  sel <- setdiff(selected_questions, "All")
+  if (length(sel) > 0) {
+    df <- df %>%
+      filter(as.character(.data[[question_col]]) %in%
+          as.character(sel))
+  }
+  df
+}

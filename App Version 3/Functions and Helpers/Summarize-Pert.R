@@ -164,6 +164,18 @@ summarize_question_pert <- function(df,
   m_hat <- mean(samples_eq)
   v_hat <- var(samples_eq)
 
+  if (AC_available) {
+    
+    m_hat_w <- mean(samples_w)
+    v_hat_w <- var(samples_w)
+    
+  } else {
+    
+    m_hat_w <- NA_real_
+    v_hat_w <- NA_real_
+    
+  }
+  
     if (is_probability) {
     if (!is.finite(v_hat) || v_hat <= 1e-12) {
       v_hat <- 1e-6
@@ -180,10 +192,8 @@ summarize_question_pert <- function(df,
     
     if (AC_available) {
       
-      m_hat_w <- mean(samples_w)
-      v_hat_w <- var(samples_w)
-      
       if (!is.finite(v_hat_w) || v_hat_w <= 1e-12) {
+        
         v_hat_w <- 1e-6
       }
       
@@ -207,9 +217,6 @@ summarize_question_pert <- function(df,
     
     alpha_star_w <- NA_real_
     beta_star_w <- NA_real_
-    
-    m_hat_w <- NA_real_
-    v_hat_w <- NA_real_
     
     grid_beta <- grid
     

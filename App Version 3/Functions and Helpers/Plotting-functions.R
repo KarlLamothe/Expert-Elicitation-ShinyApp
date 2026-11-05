@@ -126,8 +126,7 @@ build_numeric_individuals_plot <- function(
     labs(x = NULL, y = "Estimate")+
     facet_wrap(
       ~ Facet_Label,
-      ncol = if (n_rounds > 1) 1 else min(4, length(unique(df$Facet_Label))),
-      scales = "free"
+      ncol = if (n_rounds > 1) 1 else min(4, length(unique(df$Facet_Label)))
     )+
     theme(axis.text.y = element_blank(), axis.ticks.y = element_blank())
 }
@@ -234,7 +233,7 @@ build_numeric_density_plot <- function(df_mix,
   }
 
     if ("Question_Round" %in% names(df_mix)) {
-    p <- p + facet_wrap( ~ Question_Round, ncol = 1, scales = "free") 
+    p <- p + facet_wrap( ~ Question_Round, ncol = 1) 
   }
   
   p+theme(legend.position = "none" )
@@ -340,7 +339,7 @@ build_numeric_hist_plot <- function(
   }
   
   if ("Question_Round" %in% names(samples)) {
-    p <- p + facet_wrap( ~ Question_Round, ncol = 1, scales = "free")
+    p <- p + facet_wrap( ~ Question_Round, ncol = 1)
   }
   p
 }
@@ -350,226 +349,104 @@ build_numeric_hist_plot <- function(
 # build histogram plots
 ################################################################################
 ################################################################################
-build_probability_cdf_plot <- function(
-    df_mix,
-    df_mix_w = NULL,
-    df_ind = NULL,
-    df_beta = NULL,
-    show_individual = TRUE,
-    show_beta = TRUE,
-    show_AC_mix = TRUE
-) {
+build_probability_cdf_plot <- function(df_mix,
+                                       df_mix_w = NULL,
+                                       df_ind = NULL,
+                                       df_beta = NULL,
+                                       show_individual = TRUE,
+                                       show_beta = TRUE,
+                                       show_AC_mix = TRUE) {
   
-  p <- ggplot() +
-    
-    geom_line(
-      data = df_mix,
-      aes(
-        x = p,
-        y = cdf,
-        colour = "Equal-weight mixture",
-        linetype = "Equal-weight mixture"
-      ),
-      linewidth = 0.8
-    ) +
-    
-    scale_x_continuous(
-      limits = c(0,1),
-      breaks = seq(0,1,0.2)
-    ) +
-    
-    labs(
-      x = "Probability",
-      y = "Cumulative probability"
-    ) +
-    
-    scale_colour_manual(
-      name = NULL,
-      breaks = c(
-        "Equal-weight mixture",
-        "AC-weighted mixture",
-        "Beta approximation"
-      ),
-      values = c(
-        "Equal-weight mixture" = "black",
-        "AC-weighted mixture" = "#D55E00",
-        "Beta approximation" = "#0072B2"
-      )
-    ) +
-    
-    scale_linetype_manual(
-      name = NULL,
-      breaks = c(
-        "Equal-weight mixture",
-        "AC-weighted mixture",
-        "Beta approximation"
-      ),
-      values = c(
-        "Equal-weight mixture" = "solid",
-        "AC-weighted mixture" = "solid",
-        "Beta approximation" = "dashed"
-      )
-    )
+  p <- ggplot() + geom_line(data = df_mix, aes(x = p, y = cdf,
+                                               colour = "Equal-weight mixture",
+                                               linetype = "Equal-weight mixture"),
+                            linewidth = 0.8) +
+    scale_x_continuous(limits = c(0,1), breaks = seq(0,1,0.2)) +
+    labs(x = "Probability", y = "Cumulative probability") +
+    scale_colour_manual(name = NULL, breaks = c("Equal-weight mixture",
+                                                "AC-weighted mixture",
+                                                "Beta approximation"),
+                        values = c("Equal-weight mixture" = "black",
+                                   "AC-weighted mixture" = "#D55E00",
+                                   "Beta approximation" = "#0072B2")) +
+    scale_linetype_manual(name = NULL, breaks = c( "Equal-weight mixture",
+                                                   "AC-weighted mixture",
+                                                   "Beta approximation"),
+                          values = c("Equal-weight mixture" = "solid",
+                                     "AC-weighted mixture" = "solid",
+                                     "Beta approximation" = "dashed"))
   
   if (show_individual &&
       !is.null(df_ind)) {
-    
-    p <- p +
-      geom_line(
-        data = df_ind,
-        aes(
-          x = p,
-          y = cdf,
-          group = id
-        ),
-        alpha = 0.4,
-        colour = "grey60"
-      )
+    p <- p + geom_line(data = df_ind, aes(x = p, y = cdf, group = id),
+                       alpha = 0.4, colour = "grey60")
   }
   
   if (show_AC_mix &&
       !is.null(df_mix_w)) {
-    
-    p <- p +
-      geom_line(
-        data = df_mix_w,
-        aes(
-          x = p,
-          y = cdf,
-          colour = "AC-weighted mixture",
-          linetype = "AC-weighted mixture"
-        ),
-        linewidth = 0.8
-      )
+    p <- p + geom_line(data = df_mix_w, aes(x = p, y = cdf,
+                                            colour = "AC-weighted mixture",
+                                            linetype = "AC-weighted mixture"),
+                       linewidth = 0.8)
   }
   
   if (show_beta &&
       !is.null(df_beta)) {
-    
-    p <- p +
-      geom_line(
-        data = df_beta,
-        aes(
-          x = p,
-          y = cdf,
-          colour = "Beta approximation",
-          linetype = "Beta approximation"
-        ),
-        linewidth = 0.8
-      )
+    p <- p + geom_line(data = df_beta, aes(x = p, y = cdf,
+                                           colour = "Beta approximation",
+                                           linetype = "Beta approximation"),
+                       linewidth = 0.8)
   }
   
   if ("Question_Round" %in% names(df_mix)) {
-    
-    p <- p +
-      facet_wrap(
-        ~ Question_Round,
-        ncol = 1,
-        scales = "fixed"
-      )
+    p <- p + facet_wrap(~ Question_Round, ncol = 1,  scales = "fixed")
   }
-  
   p
 }
 
 ################################
 # Numeric
 ################################
-build_numeric_cdf_plot <- function(
-    df_mix,
-    df_mix_w = NULL,
-    df_ind = NULL,
-    show_individual = TRUE,
-    show_AC_mix = TRUE
-) {
+build_numeric_cdf_plot <- function(df_mix,
+                                   df_mix_w = NULL,
+                                   df_ind = NULL,
+                                   show_individual = TRUE,
+                                   show_AC_mix = TRUE) {
   
-  p <- ggplot() +
-    
-    scale_colour_manual(
-      name = NULL,
-      breaks = c(
-        "Equal-weight mixture",
-        "AC-weighted mixture"
-      ),
-      values = c(
-        "Equal-weight mixture" = "black",
-        "AC-weighted mixture" = "#D55E00"
-      )
-    ) +
-    
-    scale_linetype_manual(
-      name = NULL,
-      breaks = c(
-        "Equal-weight mixture",
-        "AC-weighted mixture"
-      ),
-      values = c(
-        "Equal-weight mixture" = "solid",
-        "AC-weighted mixture" = "solid"
-      )
-    ) +
-    
-    labs(
-      x = "Estimate",
-      y = "Cumulative probability"
-    ) +
-    
-    theme(
-      legend.position = "none"
-    )
+  p <- ggplot() + scale_colour_manual(name = NULL, 
+                                      breaks = c("Equal-weight mixture",
+                                                 "AC-weighted mixture"),
+                                      values = c("Equal-weight mixture" = "black",
+                                                 "AC-weighted mixture" = "#D55E00")) +
+    scale_linetype_manual(name = NULL, breaks = c("Equal-weight mixture",
+                                                  "AC-weighted mixture"),
+                          values = c( "Equal-weight mixture" = "solid",
+                                      "AC-weighted mixture" = "solid")) +
+    labs(x = "Estimate", y = "Cumulative probability") +
+    theme(legend.position = "none")
   
   if (show_individual &&
       !is.null(df_ind)) {
     
-    p <- p +
-      geom_line(
-        data = df_ind,
-        aes(
-          x = p,
-          y = cdf,
-          group = id
-        ),
-        alpha = 0.4,
-        colour = "grey60"
-      )
+    p <- p + geom_line(data = df_ind, aes(x = p,  y = cdf, group = id),
+                       alpha = 0.4,  colour = "grey60")
   }
   
-  p <- p +
-    geom_line(
-      data = df_mix,
-      aes(
-        x = p,
-        y = cdf,
-        colour = "Equal-weight mixture",
-        linetype = "Equal-weight mixture"
-      ),
-      linewidth = 0.8
-    )
+  p <- p + geom_line(data = df_mix, aes(x = p, y = cdf,
+                                        colour = "Equal-weight mixture",
+                                        linetype = "Equal-weight mixture"),
+                     linewidth = 0.8)
   
   if (show_AC_mix &&
       !is.null(df_mix_w)) {
-    
-    p <- p +
-      geom_line(
-        data = df_mix_w,
-        aes(
-          x = p,
-          y = cdf,
-          colour = "AC-weighted mixture",
-          linetype = "AC-weighted mixture"
-        ),
-        linewidth = 0.8
-      )
+    p <- p + geom_line(data = df_mix_w, aes(x = p, y = cdf,
+                                            colour = "AC-weighted mixture",
+                                            linetype = "AC-weighted mixture"),
+                       linewidth = 0.8)
   }
   
   if ("Question_Round" %in% names(df_mix)) {
-    
-    p <- p +
-      facet_wrap(
-        ~ Question_Round,
-        ncol = 1,
-        scales = "free"
-      )
+    p <- p + facet_wrap(~ Question_Round, ncol = 1)
   }
   
   p
