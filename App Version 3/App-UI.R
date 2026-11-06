@@ -101,21 +101,23 @@ ui <- fluidPage(
     # ============================================================
     # ANALYSIS OPTIONS
     # ============================================================
-    conditionalPanel(condition = "input.main_tab != 'expert' &&
-    input.main_tab != 'summary'",
+    conditionalPanel(
+      condition = "input.main_tab != 'expert' && input.main_tab != 'summary' &&
+      output.show_display_options",
     card_box(tags$details(
       open = TRUE,
       tags$summary(
       style = "cursor: pointer; font-weight: 600; 
       font-size: 18px; user-select:none;",
-      icon("sliders"), "Analysis Options"),
+      icon("sliders"), "Display Options"),
       br(),
       conditionalPanel(condition = "input.main_tab != 'hist'",
                        checkboxInput("show_individual",
                                      "Show individual expert curves", TRUE)),
       checkboxInput("show_AC_mix",
                     "Show assessment confidence-weighted mixture", TRUE),
-      checkboxInput("show_beta", "Show Beta approximation", TRUE),
+      conditionalPanel(condition = "output.show_beta_option", checkboxInput(
+        "show_beta", "Show Beta approximation", TRUE)),
       tags$details(tags$summary(
         style = "cursor: pointer; font-weight: 600; user-select:none;",
         "Advanced analysis settings"),
@@ -145,13 +147,13 @@ ui <- fluidPage(
       tags$div(style = "margin-bottom: 6px;"),
       downloadButton("download_participants_png", "Expert Estimates (PNG)", width = "100%"),
       tags$div(style = "margin-bottom: 6px;"),
-      downloadButton("download_density_png", "Pooled Distributions (PNG)", width = "100%"),
+      downloadButton("download_density_png", "Pooled Estimates (PNG)", width = "100%"),
       tags$div(style = "margin-bottom: 6px;"),
-      downloadButton("download_hist_png", "Simulated Estimates (PNG)", width = "100%"),
-      tags$div(style = "margin-bottom: 6px;"),
+      #downloadButton("download_hist_png", "Simulated Estimates (PNG)", width = "100%"),
+      #tags$div(style = "margin-bottom: 6px;"),
       downloadButton("download_cdf_png", "CDFs (PNG)", width = "100%"),
       tags$hr(),      
-      tags$strong("Reporting & Exporting"),
+      tags$strong("Reporting & Export"),
       tags$div(style = "margin-bottom: 6px;"),
       downloadButton("download_summary", "Question Results (CSV)", width="100%"),
       tags$div(style = "margin-bottom: 6px;"),
@@ -171,7 +173,7 @@ ui <- fluidPage(
         tags$br(),
         "Developed by Karl Lamothe, Fisheries and Oceans Canada",
         tags$br(),
-        "Version 2.2.0",
+        "Version 3.0.0",
         " | Last updated: November 2026")),
     
     ############################################################################
@@ -182,27 +184,27 @@ ui <- fluidPage(
     mainPanel(width=9, tabsetPanel(
       id = "main_tab",type="pills",
       tabPanel(tagList(icon("users"),"Expert Estimates"), value='expert',
-               title_card("Individual Expert Estimates",
+               title_card("Individual Expert Responses",
                           "Displays individual expert responses and estimates for each question and elicitation round."),
                uiOutput("question_panel_expert"),
                uiOutput("plot_participants_container")),
       
-      tabPanel(tagList(icon("chart-area"),"Pooled Distributions"),
-               title_card("Pooled Expert Distributions",
-                          paste("Displays pooled group results derived from expert responses. Visualization type depends on the question type.")),
+      tabPanel(tagList(icon("chart-area"),"Pooled Estimates"),
+               title_card("Pooled Expert Estimates",
+                          paste("Displays pooled group results derived from expert responses.")),
                uiOutput("question_panel_density"),
                uiOutput("plot_density_ui")),
       
-      tabPanel(tagList(icon("chart-bar"),"Simulated Pooled Estimates"),
-               value="hist",
-               title_card("Simulated Pooled Estimates",
-                          "Displays pooled outcomes generated from the selected pooling method and question type."),
-               uiOutput("question_panel_hist"),
-               uiOutput("plot_hist_ui")),
+      #tabPanel(tagList(icon("chart-bar"),"Simulated Pooled Estimates"),
+      #         value="hist",
+      #         title_card("Simulated Pooled Estimates",
+      #                    "Displays pooled outcomes generated from the selected pooling method."),
+      #         uiOutput("question_panel_hist"),
+      #         uiOutput("plot_hist_ui")),
       
       tabPanel(tagList(icon("chart-line"),"CDF"),
                title_card("Cumulative Probability",
-                          "Displays cumulative pooled results where applicable. Visualization type depends on the question type."),
+                          "Displays cumulative pooled results where applicable."),
                uiOutput("question_panel_cdf"),
                uiOutput("plot_cdf_ui")),
       

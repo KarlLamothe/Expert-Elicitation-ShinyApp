@@ -225,6 +225,55 @@ server <- function(input, output, session) {
   output$question_panel_cdf     <- renderUI(question_panel_ui())
   output$question_panel_summary <- renderUI(question_panel_ui())
   
+  ###############################################################################
+  # Display Options Visibility
+  ###############################################################################
+  
+  output$show_display_options <- reactive({
+    req(raw_df())
+    df <- raw_df()
+    # No question selected yet
+    if (is.null(input$question_multi)) {
+      return(TRUE)
+    }
+    # Filter to selected questions
+    sel <- setdiff(input$question_multi, "All")
+    if (length(sel) > 0) {
+      df <- df %>%
+        filter(as.character(.data[[input$col_question]]) %in%
+                 as.character(sel))
+    }
+    # Backwards compatibility
+    if (!"Question_Type" %in% names(df)) {
+      return(TRUE)
+    }
+    any(df$Question_Type %in% c("probability", "numeric"))
+  })
+  outputOptions(output, "show_display_options", suspendWhenHidden = FALSE)
+  
+  ###############################################################################
+  # Beta Option Visibility
+  ###############################################################################
+  
+  output$show_beta_option <- reactive({
+    req(raw_df())
+    df <- raw_df()
+    if (is.null(input$question_multi)) {
+      return(TRUE)
+    }
+    sel <- setdiff(input$question_multi, "All")
+    if (length(sel) > 0) {
+      df <- df %>%
+        filter(as.character(.data[[input$col_question]]) %in%
+            as.character(sel))
+    }
+    if (!"Question_Type" %in% names(df)) {
+      return(TRUE)
+    }
+    any(df$Question_Type == "probability")
+  })
+  outputOptions(output, "show_beta_option", suspendWhenHidden = FALSE)
+  
   ###########################################################################
   # INPUT COLUMN MAPPING
   # Automatically detects likely question identifiers, question text,
@@ -426,20 +475,18 @@ server <- function(input, output, session) {
             response_col = input$col_response,
             AC_col = AC_col_val,
             question_label = as.character(q),
-            question_type = q_type
-          )
+            question_type = q_type)
           
         } else if (q_type == "ranking") {
           
           summarize_question_ranking(
-            df_qr,
+            df_q,
             id_col = input$col_id,
             option_col = input$col_option,
             rank_col = input$col_rank,
             AC_col = AC_col_val,
             question_label = as.character(q),
-            question_type = q_type
-          )
+            question_type = q_type)
         
         } else {
           
@@ -454,8 +501,7 @@ server <- function(input, output, session) {
             Nsim = input$Nsim,
             seed = NULL,
             question_label = as.character(q),
-            question_type = q_type
-          )
+            question_type = q_type)
           
         }
       })
@@ -483,8 +529,7 @@ server <- function(input, output, session) {
               response_col = input$col_response,
               AC_col = AC_col_val,
               question_label = as.character(q),
-              question_type = q_type
-            )
+              question_type = q_type)
             
            } else if (q_type == "ranking") {
               
@@ -495,8 +540,7 @@ server <- function(input, output, session) {
                 rank_col = input$col_rank,
                 AC_col = AC_col_val,
                 question_label = as.character(q),
-                question_type = q_type
-              )
+                question_type = q_type)
               
             } else {
             
@@ -511,8 +555,7 @@ server <- function(input, output, session) {
               Nsim = input$Nsim,
               seed = NULL,
               question_label = as.character(q),
-              question_type = q_type
-            )
+              question_type = q_type)
             
           }
             
@@ -906,31 +949,13 @@ server <- function(input, output, session) {
     filename = function() {
       paste0("expert_estimates_", format(Sys.time(), "%Y%m%d_%H%M"), ".png")
     },
+    
     content = function(file) {
       req(results())
-      r <- results()
-      dims <- export_dimensions(r)
-      g <- build_individuals_plot(df_raw = raw_df(),
-                                  id_col = input$col_id,
-                                  lpp_col = input$col_lpp,
-                                  bgp_col = input$col_bgp,
-                                  hpp_col = input$col_hpp,
-                                  question_col = input$col_question,
-        round_col = if (
-          !is.null(input$col_round) &&
-          !identical(input$col_round, "<none>")
-        ) {
-          input$col_round
-        } else {
-          NULL
-        },
-        selected_questions = input$question_multi,
-        use_export_theme = TRUE,
-        theme_export = theme_export,
-        facet_cols = dims$facet_cols)
-      
+      dims <- export_dimensions(results())
+      g <- build_expert_estimates_plot(export=TRUE)
       ggsave(filename = file, plot = g, width = dims$width, height = dims$height,
-             dpi = 600,units = "in",  bg = "white", limitsize = FALSE)
+             dpi = 600, units = "in", bg = "white", limitsize = FALSE)
     }
   )
   
@@ -938,29 +963,15 @@ server <- function(input, output, session) {
     filename = function() {
       paste0("density_", format(Sys.time(), "%Y%m%d_%H%M"), ".png")
     },
+    
     content = function(file) {
       req(results())
       r <- results()
       dims <- export_dimensions(r)
-      g <- build_density_plot(r,
-        show_individual = isTRUE(input$show_individual),
-        show_beta = isTRUE(input$show_beta),
-        show_AC_mix = isTRUE(input$show_AC_mix),
-        facet_cols = dims$facet_cols)
+      g <- build_density_panel_plot(export=TRUE) 
       
-      # Export-specific styling
-      g_export <- g +
-        theme_export +
-        theme(axis.text.y = element_blank(),
-              axis.ticks.y = element_blank(),
-              legend.position = "bottom",
-              legend.direction = "horizontal",
-              legend.text = element_text(size = 9),
-              legend.key.width = grid::unit(1.2, "cm"))
-      
-      ggsave(filename = file,plot = g_export,width = dims$width,
-             height = dims$height,dpi = 600,units = "in",bg = "white",
-             limitsize = FALSE)
+      ggsave(filename = file, plot = g, width = dims$width, height = dims$height, 
+             dpi = 600, units = "in", bg = "white", limitsize = FALSE)
     }
   )
   
@@ -972,18 +983,9 @@ server <- function(input, output, session) {
       req(results())
       r <- results()
       dims <- export_dimensions(r)
-      g <- build_hist_plot(r,
-        show_beta = isTRUE(input$show_beta),
-        show_AC_mix = isTRUE(input$show_AC_mix),
-        facet_cols = dims$facet_cols)
+      g <- build_hist_panel_plot(export=TRUE)
       
-      g_export <- g + theme_export + theme(
-          legend.position = "bottom",
-          legend.direction = "horizontal",
-          legend.text = element_text(size = 9),
-          legend.key.width = grid::unit(1.2, "cm"))
-      
-      ggsave(filename = file, plot = g_export, width = dims$width,
+      ggsave(filename = file, plot = g, width = dims$width,
              height = dims$height, dpi = 600, units = "in", bg = "white",
              limitsize = FALSE)
     }
@@ -997,19 +999,9 @@ server <- function(input, output, session) {
       req(results())
       r <- results()
       dims <- export_dimensions(r)
-      g <- build_cdf_plot(r,
-        show_individual = isTRUE(input$show_individual),
-        show_beta = isTRUE(input$show_beta),
-        show_AC_mix = isTRUE(input$show_AC_mix),
-        facet_cols = dims$facet_cols)
+      g <- build_cdf_panel_plot(export=TRUE)
       
-      g_export <- g + theme_export + theme(
-          legend.position = "bottom",
-          legend.direction = "horizontal",
-          legend.text = element_text(size = 9),
-          legend.key.width = grid::unit(1.2, "cm"))
-      
-      ggsave(filename = file,plot = g_export,width = dims$width,
+      ggsave(filename = file,plot = g,width = dims$width,
              height = dims$height,dpi = 600,units = "in",bg = "white",
              limitsize = FALSE)
     }
@@ -1026,69 +1018,27 @@ server <- function(input, output, session) {
       
       # Determine appropriate export layout
       dims <- export_dimensions(r)
-      facet_cols <- dims$facet_cols
-      show_ind     <- isTRUE(input$show_individual)
-      show_beta    <- isTRUE(input$show_beta)
-      show_AC_mix <- isTRUE(input$show_AC_mix)
       
       # Build plots (respecting current toggle states)
-      g1 <- build_density_plot(r, show_individual = show_ind,
-                               show_beta = show_beta, show_AC_mix = show_AC_mix,
-                               facet_cols = facet_cols)
-      g2 <- build_hist_plot(r, show_beta = show_beta, show_AC_mix = show_AC_mix,
-                            facet_cols = facet_cols)
-      g3 <- build_cdf_plot(r, show_individual = show_ind,
-                           show_beta = show_beta, show_AC_mix = show_AC_mix,
-                           facet_cols = facet_cols)
-      g4 <- build_individuals_plot(
-        df_raw = raw_df(),
-        id_col = input$col_id,
-        lpp_col = input$col_lpp,
-        bgp_col = input$col_bgp,
-        hpp_col = input$col_hpp,
-        question_col = input$col_question,
-        
-        round_col = if (
-          !is.null(input$col_round) &&
-          !identical(input$col_round, "<none>")
-        ) {
-          input$col_round
-        } else {
-          NULL
-        },
-        selected_questions = input$question_multi,
-        use_export_theme = TRUE,
-        theme_export = theme_export,
-        facet_cols = dims$facet_cols)
-      
-      g1 <- g1 + theme_export + theme(
-          axis.text.y = element_blank(),
-          axis.ticks.y = element_blank(),
-          legend.position = "bottom",
-          legend.text = element_text(size = 9))
-      
-      g2 <- g2 +theme_export + theme(
-          legend.position = "bottom",
-          legend.text = element_text(size = 9))
-      
-      g3 <- g3 +theme_export + theme(
-          legend.position = "bottom",
-          legend.text = element_text(size = 9))
+      g1 <- build_density_panel_plot(export=TRUE)
+      #g2 <- build_hist_panel_plot(export=TRUE)
+      g3 <- build_cdf_panel_plot(export=TRUE)
+      g4 <- build_expert_estimates_plot(export=TRUE)
       
       # Save all figures to a temp directory
       outdir <- tempfile("plots_")
       dir.create(outdir, showWarnings = FALSE)
       
       f1 <- file.path(outdir, paste0("density_",   Sys.Date(), ".png"))
-      f2 <- file.path(outdir, paste0("histogram_", Sys.Date(), ".png"))
+      #f2 <- file.path(outdir, paste0("histogram_", Sys.Date(), ".png"))
       f3 <- file.path(outdir, paste0("cdf_",       Sys.Date(), ".png"))
       f4 <- file.path(outdir, paste0("individuals_", Sys.Date(), ".png"))
       
       ggsave(f1, g1,width = dims$width,height = dims$height,
              dpi = 600,units = "in",bg = "white",limitsize = FALSE)
       
-      ggsave(f2, g2,width = dims$width,height = dims$height,dpi = 600,
-             units = "in",bg = "white",limitsize = FALSE)
+      #ggsave(f2, g2,width = dims$width,height = dims$height,dpi = 600,
+      #       units = "in",bg = "white",limitsize = FALSE)
       
       ggsave(f3, g3,width = dims$width,height = dims$height,dpi = 600,
              units = "in",bg = "white",limitsize = FALSE)
@@ -1108,7 +1058,8 @@ server <- function(input, output, session) {
       
       # Zip them up
       oldwd <- setwd(outdir); on.exit(setwd(oldwd), add = TRUE)
-      zip(zipfile = file, files = basename(c(f1, f2, f3, f4,f_summary_csv)))
+      zip(zipfile = file, files = basename(c(f1, #f2, 
+                                             f3, f4,f_summary_csv)))
     }
   )
   
@@ -1157,27 +1108,23 @@ server <- function(input, output, session) {
   # Displays lowest plausible, best guess, and highest plausible estimates
   # for each participant, optionally filtered to a selected elicitation round.
   ###########################################################################
-  output$plot_participants <- renderPlot({
-    
-    req(results())
+  # helper first
+  build_expert_estimates_plot <- function(export=FALSE) {
     df_plot <- raw_df()
     if (!is.null(input$round_filter) &&
         input$round_filter != "All" &&
         !is.null(input$col_round) &&
         input$col_round != "<none>") {
-      
       df_plot <- df_plot %>%
         filter(as.character(.data[[input$col_round]]) ==
-            as.character(input$round_filter))
+                 as.character(input$round_filter))
     }
-
-    df_plot <- filter_selected_questions(df_plot, input$question_multi, input$col_question)
-    
-    # Split into individual questions
+    df_plot <- filter_selected_questions(df_plot,
+                                         input$question_multi,
+                                         input$col_question)
     question_list <- split(df_plot, as.character(df_plot[[input$col_question]]))
     plots <- list()
     
-    # Build one plot per question
     for (q in names(question_list)) {
       df_q <- question_list[[q]]
       q_type <- if ("Question_Type" %in% names(df_q)) {
@@ -1187,14 +1134,13 @@ server <- function(input, output, session) {
       }
       
       if (q_type == "probability") {
-        
-        plots[[length(plots) + 1]] <-
-          build_probability_individuals_plot(
+        plots[[length(plots) + 1]] <- build_probability_individuals_plot(
             df = df_q,
             id_col = input$col_id,
             lpp_col = input$col_lpp,
             bgp_col = input$col_bgp,
             hpp_col = input$col_hpp,
+            export = export,
             question_col = input$col_question,
             round_col = if (
               !is.null(input$col_round) &&
@@ -1216,6 +1162,7 @@ server <- function(input, output, session) {
             bgp_col = input$col_bgp,
             hpp_col = input$col_hpp,
             question_col = input$col_question,
+            export = export,
             round_col = if (
               !is.null(input$col_round) &&
               input$col_round != "<none>"
@@ -1225,6 +1172,7 @@ server <- function(input, output, session) {
               NULL
             }
           )
+        
       } else if (q_type == "yesno") {
         
         plots[[length(plots) + 1]] <-
@@ -1232,6 +1180,7 @@ server <- function(input, output, session) {
             df = df_q,
             id_col = input$col_id,
             response_col = input$col_response,
+            export = export,
             round_col = if (
               !is.null(input$col_round) &&
               input$col_round != "<none>"
@@ -1250,6 +1199,7 @@ server <- function(input, output, session) {
             id_col = input$col_id,
             option_col = input$col_option,
             rank_col = input$col_rank,
+            export = export,
             round_col = if (
               !is.null(input$col_round) &&
               input$col_round != "<none>"
@@ -1259,16 +1209,23 @@ server <- function(input, output, session) {
               NULL
             }
           )
-        
       }
     }
     
-    # Arrange questions side-by-side
-    patchwork::wrap_plots(plots,ncol = length(plots))+
-      patchwork::plot_layout(guides = "collect") &
-      theme(legend.position = "bottom")
-  })
+    patchwork::wrap_plots(plots, ncol = length(plots)) +
+      patchwork::plot_layout(guides = "collect") 
+  }
   
+    output$plot_participants <- renderPlot({
+      req(results())
+      build_expert_estimates_plot()
+    })
+
+  
+    #######################################################
+    # Shared Plot Helpers
+    #######################################################
+    
   filter_questions <- function(df, sel) {
     if (is.null(df) ||
         nrow(df) == 0 ||
@@ -1280,43 +1237,43 @@ server <- function(input, output, session) {
   }
   
   filter_question <- function(df, q) {
-    
     if (is.null(df) ||
         nrow(df) == 0 ||
         !"Question" %in% names(df)) {
       return(df)
     }
-    
     df %>%
       filter(as.character(Question) == q)
   }
   
-    # Plots: Mixture density (faceted by full label)
-  output$plot_density <- renderPlot({
-    req(plot_results())
+  #####################################################
+  # Plots: Mixture density
+  #####################################################
+  # helper
+  build_density_panel_plot <- function(export=FALSE) {
     r <- plot_results()
     plots <- list()
     
-    # Filter to selected questions
+    # Filter selected questions
     if (!is.null(input$question_multi)) {
       sel <- setdiff(input$question_multi, "All")
+      
       if (length(sel) > 0) {
         r$summaries <- r$summaries %>%
           filter(as.character(Question) %in% as.character(sel))
-        r$samples_all   <- filter_questions(r$samples_all, sel)
-        r$dens_mix_all  <- filter_questions(r$dens_mix_all, sel)
+        
+        r$samples_all    <- filter_questions(r$samples_all, sel)
+        r$dens_mix_all   <- filter_questions(r$dens_mix_all, sel)
         r$dens_mix_w_all <- filter_questions(r$dens_mix_w_all, sel)
-        r$dens_ind_all  <- filter_questions(r$dens_ind_all, sel)
-        r$beta_all      <- filter_questions(r$beta_all, sel)}}
-
-    # Determine questions after filtering
+        r$dens_ind_all   <- filter_questions(r$dens_ind_all, sel)
+        r$beta_all       <- filter_questions(r$beta_all, sel)
+      }
+    }
+    
     questions <- unique(as.character(r$summaries$Question))
-  
-    # Build one plot per question
     for (q in questions) {
-      
-      if (nrow(
-        r$summaries %>% filter(as.character(Question) == q)) == 0) {
+      if (nrow(r$summaries %>%
+        filter(as.character(Question) == q)) == 0) {
         next
       }
       
@@ -1329,14 +1286,12 @@ server <- function(input, output, session) {
       if (is.na(q_type)) {
         next
       }
-
       dens_mix_q   <- filter_question(r$dens_mix_all, q)
       dens_mix_w_q <- filter_question(r$dens_mix_w_all, q)
       dens_ind_q   <- filter_question(r$dens_ind_all, q)
       beta_q       <- filter_question(r$beta_all, q)
       
       if (q_type == "probability") {
-        
         plots[[length(plots) + 1]] <-
           build_probability_density_plot(
             df_mix = dens_mix_q,
@@ -1345,68 +1300,77 @@ server <- function(input, output, session) {
             df_beta = beta_q,
             show_individual = isTRUE(input$show_individual),
             show_beta = isTRUE(input$show_beta),
-            show_AC_mix = isTRUE(input$show_AC_mix)
-          )
+            show_AC_mix = isTRUE(input$show_AC_mix),
+            export = export)
         
       } else if (q_type == "numeric") {
-        
         plots[[length(plots) + 1]] <-
           build_numeric_density_plot(
             df_mix = dens_mix_q,
             df_mix_w = dens_mix_w_q,
             df_ind = dens_ind_q,
             show_individual = isTRUE(input$show_individual),
-            show_AC_mix = isTRUE(input$show_AC_mix)
-          )
+            show_AC_mix = isTRUE(input$show_AC_mix),
+            export = export)
+        
       } else if (q_type == "yesno") {
         
         summary_q <- r$summaries %>%
           filter(as.character(Question) == q)
-        plots[[length(plots) + 1]] <- build_yesno_plot(summary_q)
+        plots[[length(plots) + 1]] <-build_yesno_plot(summary_q, export = export)
         
       } else if (q_type == "ranking") {
         
         ranking_q <- r$ranking_summary_all %>%
           filter(as.character(Question) == q)
-        
-        plots[[length(plots) + 1]] <-
-          build_ranking_pooled_plot(ranking_q)
+        plots[[length(plots) + 1]] <- build_ranking_pooled_plot(ranking_q, export = export)
         
       }
     }
-    # Assemble
-    patchwork::wrap_plots(plots,ncol = length(plots)) +
-      patchwork::plot_layout(guides = "collect")
+    
+    if (length(plots) == 0) {
+      
+      return(ggplot() + annotate("text", x = 1, y = 1,
+                                 label = paste(
+                                   "No distribution-based visualizations are available",
+                                   "for the selected question type."),
+                                 size = 6) + theme_void())
+    }
+    
+    patchwork::wrap_plots(plots, ncol = length(plots)) 
+  }
+  
+  output$plot_density <- renderPlot({
+    req(plot_results())
+    build_density_panel_plot()
   })
   
+  #################################################
   # Plots: Histogram + Beta fit (faceted by full label)
-  output$plot_hist <- renderPlot({
-    req(plot_results())
+  #################################################
+  build_hist_panel_plot <- function(export=FALSE) {
     r <- plot_results()
     plots <- list()
-    
     if (!is.null(input$question_multi)) {
       sel <- setdiff(input$question_multi, "All")
       if (length(sel) > 0) {
         r$summaries <- r$summaries %>%
           filter(as.character(Question) %in% as.character(sel))
-        r$samples_all   <- filter_questions(r$samples_all, sel)
-        r$dens_mix_all  <- filter_questions(r$dens_mix_all, sel)
+        r$samples_all    <- filter_questions(r$samples_all, sel)
+        r$dens_mix_all   <- filter_questions(r$dens_mix_all, sel)
         r$dens_mix_w_all <- filter_questions(r$dens_mix_w_all, sel)
-        r$dens_ind_all  <- filter_questions(r$dens_ind_all, sel)
-        r$beta_all      <- filter_questions(r$beta_all, sel)
+        r$dens_ind_all   <- filter_questions(r$dens_ind_all, sel)
+        r$beta_all       <- filter_questions(r$beta_all, sel)
       }
     }
- 
     questions <- unique(as.character(r$summaries$Question))
-    
     for (q in questions) {
-      
       if (nrow(
-        r$summaries %>% filter(as.character(Question) == q)) == 0) {
+        r$summaries %>%
+        filter(as.character(Question) == q)
+      ) == 0) {
         next
       }
-      
       q_type <- r$summaries %>%
         filter(as.character(Question) == q) %>%
         pull(Question_Type) %>%
@@ -1416,7 +1380,6 @@ server <- function(input, output, session) {
       if (is.na(q_type)) {
         next
       }
-      
       dens_mix_q   <- filter_question(r$dens_mix_all, q)
       dens_mix_w_q <- filter_question(r$dens_mix_w_all, q)
       dens_ind_q   <- filter_question(r$dens_ind_all, q)
@@ -1424,7 +1387,6 @@ server <- function(input, output, session) {
       samples_q    <- filter_question(r$samples_all, q)
       
       if (q_type == "probability") {
-        
         plots[[length(plots) + 1]] <-
           build_probability_hist_plot(
             samples = samples_q,
@@ -1432,46 +1394,45 @@ server <- function(input, output, session) {
             dens_mix_w = dens_mix_w_q,
             df_beta = beta_q,
             show_AC_mix = isTRUE(input$show_AC_mix),
-            show_beta = isTRUE(input$show_beta))
+            show_beta = isTRUE(input$show_beta),
+            export = export )
         
       } else if (q_type == "numeric") {
-        
         plots[[length(plots) + 1]] <-
           build_numeric_hist_plot(
             samples = samples_q,
             dens_mix = dens_mix_q,
             dens_mix_w = dens_mix_w_q,
-            show_AC_mix = isTRUE(input$show_AC_mix))
-       } else if (q_type == "yesno") {
+            show_AC_mix = isTRUE(input$show_AC_mix),
+            export = export)
         
-        summary_q <- r$summaries %>%
-          filter(as.character(Question) == q)
-        
-        plots[[length(plots) + 1]] <-
-          build_yesno_plot(summary_q)
-        
-       } else if (q_type == "ranking") {
-         
-         ranking_q <- r$ranking_summary_all %>%
-           filter(as.character(Question) == q)
-         
-         plots[[length(plots) + 1]] <-
-           build_ranking_pooled_plot(ranking_q)
-         
-       }
+      } else if (q_type %in% c("yesno", "ranking")) {
+        next
+      }
     }
     
-    patchwork::wrap_plots(plots, ncol = length(plots)) +
-      patchwork::plot_layout(guides="collect")
-    
+    if (length(plots) == 0) {
+      
+      return(ggplot() + annotate("text", x = 1, y = 1,
+                                 label = paste(
+                                   "No distribution-based visualizations are available",
+                                   "for the selected question type."),
+                                 size = 6) + theme_void())
+    }
+    patchwork::wrap_plots(plots, ncol = length(plots)) 
+  }
+  
+  output$plot_hist <- renderPlot({
+    req(plot_results())
+    build_hist_panel_plot()
   })
   
+  #################################################
   # Plots: CDF comparison (faceted by full label)
-  output$plot_cdf <- renderPlot({
-    req(plot_results())
+  #################################################
+  build_cdf_panel_plot <- function(export=FALSE) {
     r <- plot_results()
     plots <- list()
-    
     if (!is.null(input$question_multi)) {
       sel <- setdiff(input$question_multi, "All")
       if (length(sel) > 0) {
@@ -1482,15 +1443,20 @@ server <- function(input, output, session) {
         r$cdf_mix_w_all <- filter_questions(r$cdf_mix_w_all, sel)
         r$cdf_ind_all   <- filter_questions(r$cdf_ind_all, sel)
         r$cdf_beta_all  <- filter_questions(r$cdf_beta_all, sel)
+        
       }
     }
     
     questions <- unique(as.character(r$summaries$Question))
-
+    
     for (q in questions) {
       
-      if (nrow(
-        r$summaries %>% filter(as.character(Question) == q)) == 0) {
+      if (
+        nrow(
+          r$summaries %>%
+          filter(as.character(Question) == q)
+        ) == 0
+      ) {
         next
       }
       
@@ -1507,8 +1473,8 @@ server <- function(input, output, session) {
       cdf_mix_q   <- filter_question(r$cdf_mix_all, q)
       cdf_mix_w_q <- filter_question(r$cdf_mix_w_all, q)
       cdf_ind_q   <- filter_question(r$cdf_ind_all, q)
-      cdf_beta_q   <- filter_question(r$cdf_beta_all, q)
-
+      cdf_beta_q  <- filter_question(r$cdf_beta_all, q)
+      
       if (q_type == "probability") {
         
         plots[[length(plots) + 1]] <-
@@ -1519,8 +1485,8 @@ server <- function(input, output, session) {
             df_beta = cdf_beta_q,
             show_individual = isTRUE(input$show_individual),
             show_beta = isTRUE(input$show_beta),
-            show_AC_mix = isTRUE(input$show_AC_mix)
-          )
+            show_AC_mix = isTRUE(input$show_AC_mix),
+            export = export)
         
       } else if (q_type == "numeric") {
         
@@ -1530,30 +1496,28 @@ server <- function(input, output, session) {
             df_mix_w = cdf_mix_w_q,
             df_ind = cdf_ind_q,
             show_individual = isTRUE(input$show_individual),
-            show_AC_mix = isTRUE(input$show_AC_mix)
-          )
-      } else if (q_type == "yesno") {
+            show_AC_mix = isTRUE(input$show_AC_mix),
+            export = export)
         
-        summary_q <- r$summaries %>%
-          filter(as.character(Question) == q)
-        
-        plots[[length(plots) + 1]] <-
-          build_yesno_plot(summary_q)
-        
-      } else if (q_type == "ranking") {
-        
-        ranking_q <- r$ranking_summary_all %>%
-          filter(as.character(Question) == q)
-        
-        plots[[length(plots) + 1]] <-
-          build_ranking_pooled_plot(ranking_q)
-        
+      } else if (q_type %in% c("yesno", "ranking")) {
+        next
       }
     }
     
-    patchwork::wrap_plots(plots,ncol = length(plots)) +
-      patchwork::plot_layout(guides = "collect" )
-    
+    if (length(plots) == 0) {
+      
+      return(ggplot() + annotate("text", x = 1, y = 1,
+                                 label = paste(
+                                   "No distribution-based visualizations are available",
+                                   "for the selected question type."),
+                                 size = 6) + theme_void())
+    }
+    patchwork::wrap_plots(plots, ncol = length(plots)) 
+  }
+  
+  output$plot_cdf <- renderPlot({
+    req(plot_results())
+    build_cdf_panel_plot()
   })
   
   ###############################################################################
@@ -1850,6 +1814,7 @@ server <- function(input, output, session) {
     }
     
     ranking_tbl %>%
+      relocate(any_of(c("Question", "Round"))) %>%
       arrange(Question,Round, Mean_Rank, Median_Rank) %>%
       mutate(across(c(Mean_Rank, Median_Rank, Rank_SD), ~ round(.x, 2)))
   })
@@ -1858,7 +1823,6 @@ server <- function(input, output, session) {
     filename = function() {
       paste0("elicitation_summaries_", format(Sys.time(), "%Y%m%d_%H%M"), ".zip")
     },
-    
     
     content = function(file) {
       outdir <- tempfile("summaries_")

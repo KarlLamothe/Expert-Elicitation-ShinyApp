@@ -11,12 +11,20 @@ split_questions <- function(df, question_col) {
 # build individuals plots
 ################################################################################
 ################################################################################
-# probability
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+#             Probability
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+
 build_probability_individuals_plot <- function(df,
                                                id_col,
-                                               lpp_col, bgp_col, hpp_col,
+                                               lpp_col, 
+                                               bgp_col, 
+                                               hpp_col,
                                                question_col,
-                                               round_col){
+                                               round_col,
+                                               export = FALSE){
   
   df <- df %>%
     mutate(Facet_Label = if (!is.null(round_col) && round_col != "<none>") {
@@ -41,7 +49,7 @@ build_probability_individuals_plot <- function(df,
                             Best_Guess_Pr        = "BGP",
                             Highest_Plausible_Pr = "HPP"))
   
-  ggplot() + geom_linerange(data = df, aes(x = Participant,
+  p<- ggplot() + geom_linerange(data = df, aes(x = Participant,
                                             ymin = Lowest_Plausible_Pr,
                                             ymax = Highest_Plausible_Pr),
                             linewidth = 0.8, colour = "grey55") +
@@ -69,15 +77,27 @@ build_probability_individuals_plot <- function(df,
       ncol = if (n_rounds > 1) 1 else min(4, length(unique(df$Facet_Label))),
       scales = "fixed") +
     theme(axis.text.y = element_blank(), axis.ticks.y = element_blank())
+  
+  if (export) {
+    p <- p + theme_export_estimate
+  }
+  p
 }
 
-##################################
-#numeric
-##################################
-build_numeric_individuals_plot <- function(
-    df, id_col, lpp_col, bgp_col, hpp_col,
-    question_col,
-    round_col) {
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+#                 numeric
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+
+build_numeric_individuals_plot <- function(df, 
+                                           id_col, 
+                                           lpp_col, 
+                                           bgp_col, 
+                                           hpp_col,
+                                           question_col,
+                                           round_col,
+                                           export = FALSE) {
   
   df <- df %>%
     mutate(Facet_Label = if (!is.null(round_col) && round_col != "<none>") {
@@ -102,7 +122,7 @@ build_numeric_individuals_plot <- function(
                             Best_Guess_Pr        = "BGP",
                             Highest_Plausible_Pr = "HPP"))
   
-  ggplot() + geom_linerange(data = df, aes(x = Participant,
+  p <-ggplot() + geom_linerange(data = df, aes(x = Participant,
                                             ymin = Lowest_Plausible_Pr,
                                             ymax = Highest_Plausible_Pr),
                             linewidth = 0.8, colour = "grey55") +
@@ -124,26 +144,33 @@ build_numeric_individuals_plot <- function(
     
     coord_flip() +
     labs(x = NULL, y = "Estimate")+
-    facet_wrap(
-      ~ Facet_Label,
-      ncol = if (n_rounds > 1) 1 else min(4, length(unique(df$Facet_Label)))
-    )+
+    facet_wrap(~ Facet_Label, ncol = if (n_rounds > 1) 1 else min(4, length(unique(df$Facet_Label))))+
     theme(axis.text.y = element_blank(), axis.ticks.y = element_blank())
+  
+  if (export) {
+    p <- p + theme_export_estimate
+  }
+  p
 }
-
 ################################################################################
 ################################################################################
 # build density plots
 ################################################################################
 ################################################################################
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 # probability
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+
 build_probability_density_plot <- function(df_mix,
                                            df_mix_w = NULL,
                                            df_ind = NULL,
                                            df_beta = NULL,
                                            show_individual = TRUE,
                                            show_beta = TRUE,
-                                           show_AC_mix = TRUE) {
+                                           show_AC_mix = TRUE,
+                                           export=FALSE) {
   
   p <- ggplot() + 
 
@@ -192,17 +219,25 @@ build_probability_density_plot <- function(df_mix,
   if ("Question_Round" %in% names(df_mix)) {
     p <- p + facet_wrap(~ Question_Round, ncol = 1,scales = "free_y")
   }
+  
+  if (export) {
+    p <- p + theme_export_estimate
+  }
   p
 }
 
-##################################
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 # Numeric
-##################################
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+
 build_numeric_density_plot <- function(df_mix,
                                        df_mix_w = NULL,
                                        df_ind = NULL,
                                        show_individual = TRUE,
-                                       show_AC_mix = TRUE) {
+                                       show_AC_mix = TRUE,
+                                       export=FALSE) {
   
   p <- ggplot() + 
     scale_colour_manual(name = NULL, breaks = c("Equal-weight mixture",
@@ -218,24 +253,22 @@ build_numeric_density_plot <- function(df_mix,
                        alpha = 0.4,colour = "grey60") 
   }
   
-  p <- p + geom_line(data = df_mix, aes(x = p,y = density,
-                                        colour = "Equal-weight mixture",
-                                        linetype = "Equal-weight mixture"),
+  p <- p + geom_line(data = df_mix, aes(x = p,y = density, colour = "Equal-weight mixture"),
       linewidth = 0.8) 
   
   if (show_AC_mix &&
       !is.null(df_mix_w)) {
-    p <- p + geom_line(data = df_mix_w,
-                       aes(x = p, y = density, colour = "AC-weighted mixture",
-                           linetype = "AC-weighted mixture"),
-                       linewidth = 0.8) 
+    p <- p + geom_line(data = df_mix_w, aes(x = p, y = density, colour = "AC-weighted mixture"), linewidth = 0.8) 
   }
 
     if ("Question_Round" %in% names(df_mix)) {
     p <- p + facet_wrap( ~ Question_Round, ncol = 1) 
   }
   
-  p+theme(legend.position = "none" )
+  if (export) {
+    p <- p + theme_export_estimate
+  }
+  p
 }
 
 ################################################################################
@@ -243,11 +276,19 @@ build_numeric_density_plot <- function(df_mix,
 # build histogram plots
 ################################################################################
 ################################################################################
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+# probability
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+
 build_probability_hist_plot <- function(samples,
                                         dens_mix,
                                         dens_mix_w = NULL,
                                         df_beta = NULL,
-                                        show_AC_mix = TRUE,show_beta = TRUE) {
+                                        show_AC_mix = TRUE,
+                                        show_beta = TRUE,
+                                        export=FALSE) {
   
   if (all(c("Question", "Round") %in% names(samples))) {
     samples <- samples %>%
@@ -294,18 +335,23 @@ build_probability_hist_plot <- function(samples,
     p <- p + facet_wrap( ~ Question_Round, ncol = 1, scales = "free_y")
   }
   
+  if (export) {
+    p <- p + theme_export_estimate
+  }
   p
 }
 
-###################################
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 # Numeric
-###################################
-build_numeric_hist_plot <- function(
-    samples,
-    dens_mix,
-    dens_mix_w = NULL,
-    show_AC_mix = TRUE
-) {
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+
+build_numeric_hist_plot <- function(samples,
+                                    dens_mix,
+                                    dens_mix_w = NULL,
+                                    show_AC_mix = TRUE,
+                                    export=FALSE) {
   
   if (all(c("Question", "Round") %in% names(samples))) {
     samples <- samples %>%
@@ -315,37 +361,33 @@ build_numeric_hist_plot <- function(
   p <- ggplot() +
     geom_histogram(data = samples, aes(x = samples, y = after_stat(density)),
                    bins = 50,fill = "grey85", colour = "white") +
-    geom_line(data = dens_mix, aes(x = p,y = density,
-                                   colour = "Equal-weight mixture",
-                                   linetype = "Equal-weight mixture"),linewidth = 0.8) +
+    geom_line(data = dens_mix, aes(x = p,y = density, colour = "Equal-weight mixture"),linewidth = 0.8) +
     scale_colour_manual(name = NULL, breaks = c("Equal-weight mixture",
                                                 "AC-weighted mixture"),
                         values = c("Equal-weight mixture" = "black",
                                    "AC-weighted mixture" = "#D55E00")) +
-    scale_linetype_manual(name = NULL,breaks = c("Equal-weight mixture",
-                                                 "AC-weighted mixture"),
-                          values = c("Equal-weight mixture" = "solid",
-                                     "AC-weighted mixture" = "solid")) +
-    theme(axis.text.y = element_blank(), axis.ticks.y = element_blank(),
-          legend.position = "none") +
+    theme(axis.text.y = element_blank(), axis.ticks.y = element_blank()) +
     labs(x = "Estimate", y = "Density")
   
   if (show_AC_mix &&
       !is.null(dens_mix_w)) {
     p <- p + geom_line(data = dens_mix_w, aes( x = p,y = density,
-                                               colour = "AC-weighted mixture",
-                                               linetype = "AC-weighted mixture"), linewidth = 0.8)
+                                               colour = "AC-weighted mixture"),
+                       linewidth = 0.8)
   }
   
   if ("Question_Round" %in% names(samples)) {
     p <- p + facet_wrap( ~ Question_Round, ncol = 1)
+  }
+  if (export) {
+    p <- p + theme_export_estimate
   }
   p
 }
 
 ################################################################################
 ################################################################################
-# build histogram plots
+# build cdf plots
 ################################################################################
 ################################################################################
 build_probability_cdf_plot <- function(df_mix,
@@ -354,7 +396,8 @@ build_probability_cdf_plot <- function(df_mix,
                                        df_beta = NULL,
                                        show_individual = TRUE,
                                        show_beta = TRUE,
-                                       show_AC_mix = TRUE) {
+                                       show_AC_mix = TRUE,
+                                       export=FALSE) {
   
   p <- ggplot() + geom_line(data = df_mix, aes(x = p, y = cdf,
                                                colour = "Equal-weight mixture",
@@ -400,6 +443,9 @@ build_probability_cdf_plot <- function(df_mix,
   if ("Question_Round" %in% names(df_mix)) {
     p <- p + facet_wrap(~ Question_Round, ncol = 1,  scales = "fixed")
   }
+  if (export) {
+    p <- p + theme_export_cdf
+  }
   p
 }
 
@@ -410,54 +456,49 @@ build_numeric_cdf_plot <- function(df_mix,
                                    df_mix_w = NULL,
                                    df_ind = NULL,
                                    show_individual = TRUE,
-                                   show_AC_mix = TRUE) {
+                                   show_AC_mix = TRUE,
+                                   export=FALSE) {
   
   p <- ggplot() + scale_colour_manual(name = NULL, 
                                       breaks = c("Equal-weight mixture",
                                                  "AC-weighted mixture"),
                                       values = c("Equal-weight mixture" = "black",
                                                  "AC-weighted mixture" = "#D55E00")) +
-    scale_linetype_manual(name = NULL, breaks = c("Equal-weight mixture",
-                                                  "AC-weighted mixture"),
-                          values = c( "Equal-weight mixture" = "solid",
-                                      "AC-weighted mixture" = "solid")) +
-    labs(x = "Estimate", y = "Cumulative probability") +
-    theme(legend.position = "none")
+    labs(x = "Estimate", y = "Cumulative probability") 
   
   if (show_individual &&
       !is.null(df_ind)) {
-    
     p <- p + geom_line(data = df_ind, aes(x = p,  y = cdf, group = interaction(id, Question_Round)),
-                       alpha = 0.4,  colour = "grey60")
-  }
+                       alpha = 0.4,  colour = "grey60")}
   
   p <- p + geom_line(data = df_mix, aes(x = p, y = cdf,
-                                        colour = "Equal-weight mixture",
-                                        linetype = "Equal-weight mixture"),
-                     linewidth = 0.8)
+                                        colour = "Equal-weight mixture"), linewidth = 0.8)
   
   if (show_AC_mix &&
       !is.null(df_mix_w)) {
     p <- p + geom_line(data = df_mix_w, aes(x = p, y = cdf,
-                                            colour = "AC-weighted mixture",
-                                            linetype = "AC-weighted mixture"),
+                                            colour = "AC-weighted mixture"),
                        linewidth = 0.8)
   }
   
   if ("Question_Round" %in% names(df_mix)) {
     p <- p + facet_wrap(~ Question_Round, ncol = 1)
   }
-  
+  if (export) {
+    p <- p + theme_export_cdf
+  }
   p
 }
 
 ###############################################################################
 ###############################################################################
-###############################################################################
 # Yes / No Expert Estimates
 ###############################################################################
-
-build_yesno_individuals_plot <- function(df,id_col, response_col, round_col = NULL) {
+###############################################################################
+build_yesno_individuals_plot <- function(df,id_col, 
+                                         response_col, 
+                                         round_col = NULL,
+                                         export = FALSE) {
   
   df_plot <- df %>%
     transmute(Participant = .data[[id_col]],
@@ -470,9 +511,9 @@ build_yesno_individuals_plot <- function(df,id_col, response_col, round_col = NU
   p <- ggplot(df_plot, aes(x = 1, y = Participant, fill = Response)) +
     geom_tile(colour = "white", linewidth = 0.5) +
     geom_text(aes(label = Response), colour = "white", 
-              fontface = "bold", size = 6) +
+              fontface = "bold", size = 5) +
     scale_fill_manual(values = c("Yes" = "#245674", "No"  = "#A65E00")) +
-    labs(x = NULL, y = "Participant", fill = NULL) +
+    labs(x = NULL, y = NULL, fill = NULL) +
     theme(axis.text.x = element_blank(),
           axis.ticks.x = element_blank(),
           panel.grid = element_blank(),
@@ -482,6 +523,10 @@ build_yesno_individuals_plot <- function(df,id_col, response_col, round_col = NU
   
   if (!is.null(round_col)) {
     p <- p + facet_wrap(~ Round_Label, ncol = 1)
+  }
+  
+  if (export) {
+    p <- p + theme_export_yesno
   }
   p
 }
@@ -493,7 +538,8 @@ build_yesno_individuals_plot <- function(df,id_col, response_col, round_col = NU
 ###############################################################################
 ###############################################################################
 
-build_yesno_plot <- function(summary_df) {
+build_yesno_plot <- function(summary_df,
+                             export = FALSE) {
   
   df_plot <- summary_df %>%
     select(Question, Round, EqW_Yes, EqW_No, ACW_Yes, ACW_No) %>%
@@ -504,15 +550,20 @@ build_yesno_plot <- function(summary_df) {
            Round_Label = paste0("Question ", Question,"\nRound ",Round))%>%
     mutate(Method = factor(Method, levels = c("Equal-weight", "AC-weighted")))
   
-  ggplot(df_plot, aes(x = Method, y = Proportion, fill = Response)) +
+  p <- ggplot(df_plot, aes(x = Method, y = Proportion, fill = Response)) +
     geom_col(width = 0.7, position = "fill") +
     geom_text(aes(label = scales::percent(Proportion, accuracy = 1)),
               position = position_stack(vjust = 0.5), colour = "white",
-              fontface = "bold", size=6)+
+              fontface = "bold", size=5)+
     scale_y_continuous(limits = c(0, 1), labels = scales::percent) +
     scale_fill_manual(values = c("Yes" = "#245674", "No" = "#D55E00")) +
     labs(x = NULL, y = "Proportion", fill = NULL) +
     facet_wrap(~ Round_Label, ncol = 1)
+  
+  if (export) {
+    p <- p + theme_export_yesno_combined
+  }
+  p
 }
 
 ###############################################################################
@@ -522,7 +573,8 @@ build_yesno_plot <- function(summary_df) {
 ###############################################################################
 
 build_ranking_individuals_plot <- function(df,id_col,option_col,
-                                           rank_col,round_col = NULL) {
+                                           rank_col,round_col = NULL,
+                                           export = FALSE) {
   
   df_plot <- df %>%
     transmute(
@@ -534,30 +586,44 @@ build_ranking_individuals_plot <- function(df,id_col,option_col,
     mutate(Round_Label = paste0("Question ", Question,"\nRound ", Round))%>%
     mutate(Rank = factor(Rank))
   
+  n_ranks <- length(unique(df_plot$Rank))
+  
   p <- ggplot(df_plot, aes(y = Participant, x = Option, fill = Rank)) +
     geom_tile(colour = "white", linewidth = 0.5) +
-    geom_text(aes(label = Rank),colour = "black", fontface = "bold",size = 6) +
-    labs(y = "Participant", x = NULL, fill = "Rank") +
-    scale_fill_viridis_d(direction = -1) +
+    geom_text(aes(label = Rank),colour = "black", fontface = "bold",size = 5) +
+    labs(y = NULL, x = NULL, fill = "Rank") +
+    scale_fill_manual(values = setNames(colorRampPalette(c("#245674", "#D6EAF2"))(n_ranks),levels(df_plot$Rank)))+
     facet_wrap(~ Round_Label,ncol = 1) +
     theme(#axis.text.x = element_text(angle = 45, hjust = 1),
           axis.text.y = element_blank(), 
-          axis.ticks.y = element_blank())
+          axis.ticks.y = element_blank(),
+          legend.title = element_blank())
   
+  if (export) {
+    p <- p + theme_export_rank
+  }
   p
 }
 
 ###############################################################################
 # Ranking pooled
 ###############################################################################
-build_ranking_pooled_plot <- function(df_summary) {
+build_ranking_pooled_plot <- function(df_summary,
+                                      export = FALSE) {
   
   df_summary <- df_summary %>%
     mutate(Question_Round = paste0("Question ", Question, "\nRound ", Round))
   
-  ggplot(df_summary, aes(x = Mean_Rank, y = reorder(Option, Mean_Rank))) +
+  p<- ggplot(df_summary, aes(x = Mean_Rank, y = reorder(Option, Mean_Rank))) +
     geom_col(fill = "#2A7F62") +
     labs(x = "Mean Rank", y = NULL)+ 
+    geom_text(aes(label = sprintf("%.2f", Mean_Rank)),colour = "white",  position = position_stack(vjust = 0.5), 
+              fontface = "bold",size = 5) +
     coord_flip() +
     facet_wrap(~ Question_Round, ncol = 1)
-}
+
+  if (export) {
+    p <- p + theme_export_rank
+  }
+  p
+  }

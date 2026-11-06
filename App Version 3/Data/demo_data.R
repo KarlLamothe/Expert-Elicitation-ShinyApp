@@ -1,101 +1,157 @@
 ############################################################################
-# Demonstration questions
+# DEMO DATASET
+# Four question types:
+#  Q1 = Probability
+#  Q2 = Numeric
+#  Q3 = Yes/No
+#  Q4 = Ranking
 ############################################################################
 
 question_texts <- c(
-  "Assuming current environmental and management conditions continue, what is the probability that the target population will increase by at least 20% relative to its 2025 abundance within the next 10 years across the assessment area?",
-  "Assuming current environmental and management conditions continue, what is the probability that the target population will decline by more than 30% relative to its 2025 abundance within the next 10 years across the assessment area?",
-  "Assuming current environmental and management conditions continue, what is the probability that suitable habitat will increase by at least 10% within the next 10 years across the assessment area?",
-  "Assuming current environmental and management conditions continue, what is the probability that the population will reach the recovery target within the next 20 years across the assessment area?")
+  "What is the probability that the population will increase by at least 20% within the next 10 years?",
+  "What will the population abundance be in 2035?",
+  "Should additional recovery actions be implemented within the next five years?",
+  "Rank the following invasive carp species according to management priority."
+)
 
 ############################################################################
-# ROUND 1
+# PROBABILITY QUESTION (Q1)
 ############################################################################
 
-demo_round1 <- data.frame(
-  Question = rep(1:4, each = 6),
-  Question_Text = rep(question_texts, each = 6),
-  Participant = rep(c("P1", "P2", "P3", "P4", "P5", "P6"), times = 4),
-  Lowest_Plausible_Pr = c(
-    # Q1 - strong agreement
-    0.30, 0.35, 0.32, 0.28, 0.34, 0.30,
-    # Q2 - bimodal
-    0.10, 0.15, 0.12, 0.60, 0.65, 0.55,
-    # Q3 - high uncertainty
-    0.05, 0.10, 0.01, 0.10, 0.15, 0.05,
-    # Q4 - disagreement likely to converge
-    0.20, 0.25, 0.30, 0.60, 0.55, 0.65),
+prob_round1 <- data.frame(
+  Question = 1,
+  Question_Type = "probability",
+  Question_Text = question_texts[1],
+  Round = 1,
+  Participant = paste0("P", 1:6),
+  Lowest_Plausible_Pr = c(0.30, 0.35, 0.32, 0.28, 0.34, 0.30),
+  Best_Guess_Pr = c(0.45, 0.50, 0.47, 0.42, 0.48, 0.46),
+  Highest_Plausible_Pr = c(0.60, 0.65, 0.62, 0.58, 0.64, 0.61),
+  Assessment_Confidence = c(85, 90, 80, 88, 92, 87)
+)
+
+prob_round2 <- prob_round1
+prob_round2$Round <- 2
+prob_round2$Best_Guess_Pr <- c(0.50, 0.52, 0.51, 0.49, 0.53, 0.50)
+prob_round2$Assessment_Confidence <- c(90, 95, 88, 92, 96, 91)
+
+############################################################################
+# NUMERIC QUESTION (Q2)
+############################################################################
+
+num_round1 <- data.frame(
+  Question = 2,
+  Question_Type = "numeric",
+  Question_Text = question_texts[2],
+  Round = 1,
+  Participant = paste0("P", 1:6),
+  Lowest_Plausible_Pr = c(2000, 2500, 1800, 2200, 2400, 2100),
+  Best_Guess_Pr = c(4000, 5000, 3500, 4500, 4800, 4200),
+  Highest_Plausible_Pr = c(7000, 8000, 6000, 7500, 7800, 7200),
+  Assessment_Confidence = c(70, 75, 72, 78, 80, 74)
+)
+
+num_round2 <- num_round1
+num_round2$Round <- 2
+num_round2$Best_Guess_Pr <- c(3500, 4200, 3200, 4000, 4300, 3800)
+num_round2$Assessment_Confidence <- c(78, 82, 80, 84, 86, 80)
+
+############################################################################
+# YES/NO QUESTION (Q3)
+############################################################################
+
+yesno_round1 <- data.frame(
+  Question = 3,
+  Question_Type = "yesno",
+  Question_Text = question_texts[3],
+  Round = 1,
+  Participant = paste0("P", 1:6),
+  Response = c("Yes", "Yes", "No", "Yes", "No", "No"),
+  Assessment_Confidence = c(75, 80, 65, 85, 60, 70)
+)
+
+yesno_round2 <- yesno_round1
+yesno_round2$Round <- 2
+yesno_round2$Response <- c("Yes", "Yes", "No", "Yes", "Yes", "No")
+yesno_round2$Assessment_Confidence <- c(85, 88, 75, 92, 80, 82)
+
+############################################################################
+# RANKING QUESTION (Q4)
+############################################################################
+
+ranking_round1 <- data.frame(
+  Question = 4,
+  Question_Type = "ranking",
+  Question_Text = question_texts[4],
+  Round = 1,
   
-  Best_Guess_Pr = c(
-    0.45, 0.50, 0.47, 0.42, 0.48, 0.46,
-    0.20, 0.25, 0.18, 0.75, 0.80, 0.70,
-    0.30, 0.35, 0.25, 0.40, 0.45, 0.30,
-    0.35, 0.40, 0.45, 0.75, 0.70, 0.80),
+  Participant = c(
+    rep("P1", 3),
+    rep("P2", 3),
+    rep("P3", 3),
+    rep("P4", 3),
+    rep("P5", 3),
+    rep("P6", 3)
+  ),
   
-  Highest_Plausible_Pr = c(
-    0.60, 0.65, 0.62, 0.58, 0.64, 0.61,
-    0.40, 0.45, 0.35, 0.90, 0.95, 0.88,
-    0.75, 0.80, 0.70, 0.85, 0.90, 0.75,
-    0.60, 0.65, 0.70, 0.90, 0.88, 0.95),
+  Option = rep(
+    c("Bighead Carp", "Grass Carp", "Silver Carp"),
+    6
+  ),
   
-  Assessment_Confidence = c(
-    # Q1 - confident
-    85, 90, 80, 88, 92, 87,
-    # Q2 - moderate confidence despite disagreement
-    70, 75, 72, 85, 88, 80,
-    # Q3 - low confidence
-    25, 35, 20, 30, 25, 40,
-    # Q4 - moderately confident
-    65, 70, 75, 78, 80, 72))
+  Rank = c(
+    1,2,3,  # P1
+    1,2,3,  # P2
+    2,1,3,  # P3
+    3,1,2,  # P4
+    3,1,2,  # P5
+    2,3,1   # P6
+  )
+)
 
-demo_round1$Round <- 1
-
-############################################################################
-# ROUND 2
-############################################################################
-
-demo_round2 <- demo_round1
-demo_round2$Round <- 2
-
-# Q1 - little change
-q1 <- demo_round2$Question == 1
-demo_round2$Best_Guess_Pr[q1] <-
-  demo_round2$Best_Guess_Pr[q1] + c(0.01, 0.00, 0.02, 0.01, 0.00, 0.01)
-demo_round2$Assessment_Confidence[q1] <-
-  pmin(demo_round2$Assessment_Confidence[q1] + 5, 100)
-
-# Q2 - bimodal pattern persists but narrows slightly
-q2 <- demo_round2$Question == 2
-demo_round2$Best_Guess_Pr[q2] <- c(0.25, 0.30, 0.28, 0.65, 0.70, 0.62)
-demo_round2$Lowest_Plausible_Pr[q2] <- c(0.15, 0.20, 0.18, 0.50, 0.55, 0.48)
-demo_round2$Highest_Plausible_Pr[q2] <- c(0.45, 0.50, 0.42, 0.80, 0.85, 0.78)
-demo_round2$Assessment_Confidence[q2] <- c(80, 82, 78, 90, 92, 88)
-
-# Q3 - confidence improves somewhat after discussion
-q3 <- demo_round2$Question == 3
-demo_round2$Assessment_Confidence[q3] <- c(45, 50, 40, 50, 45, 55)
-demo_round2$Lowest_Plausible_Pr[q3] <- c(0.10, 0.15, 0.08, 0.15, 0.20, 0.10)
-demo_round2$Highest_Plausible_Pr[q3] <- c(0.65, 0.70, 0.60, 0.75, 0.80, 0.65)
-
-# Q4 - strong convergence after discussion
-q4 <- demo_round2$Question == 4
-demo_round2$Best_Guess_Pr[q4] <- c(0.55, 0.57, 0.58, 0.60, 0.59, 0.61)
-demo_round2$Lowest_Plausible_Pr[q4] <- c(0.40, 0.42, 0.45, 0.48, 0.46, 0.50)
-demo_round2$Highest_Plausible_Pr[q4] <- c(0.68, 0.70, 0.72, 0.74, 0.73, 0.75)
-demo_round2$Assessment_Confidence[q4] <- c(85, 88, 90, 92, 90, 88)
+ranking_round2 <- data.frame(
+  Question = 4,
+  Question_Type = "ranking",
+  Question_Text = question_texts[4],
+  Round = 2,
+  
+  Participant = c(
+    rep("P1", 3),
+    rep("P2", 3),
+    rep("P3", 3),
+    rep("P4", 3),
+    rep("P5", 3),
+    rep("P6", 3)
+  ),
+  
+  Option = rep(
+    c("Bighead Carp", "Grass Carp", "Silver Carp"),
+    6
+  ),
+  
+  Rank = c(
+    1,2,3,  # P1
+    1,2,3,  # P2
+    1,2,3,  # P3
+    2,1,3,  # P4
+    2,1,3,  # P5
+    2,3,1   # P6
+  )
+)
 
 ############################################################################
-# COMBINE ROUNDS
+# COMBINE ALL QUESTION TYPES
 ############################################################################
 
-demo_df <- rbind(demo_round1, demo_round2)
-demo_df <- demo_df[, c(
-  "Question",
-  "Question_Text",
-  "Round",
-  "Participant",
-  "Lowest_Plausible_Pr",
-  "Best_Guess_Pr",
-  "Highest_Plausible_Pr",
-  "Assessment_Confidence")]
+demo_df <- dplyr::bind_rows(
+  prob_round1,
+  prob_round2,
+  num_round1,
+  num_round2,
+  yesno_round1,
+  yesno_round2,
+  ranking_round1,
+  ranking_round2
+)
+
 row.names(demo_df) <- NULL
