@@ -158,8 +158,9 @@ ui <- fluidPage(
       downloadButton("download_summary", "Question Results (CSV)", width="100%"),
       tags$div(style = "margin-bottom: 6px;"),
       downloadButton("download_all_plots_zip", "Analysis Outputs (ZIP)", width="100%"),
-      tags$div(style = "margin-bottom: 6px;"),
-      downloadButton("download_report_html", "Facilitator Report (HTML)", width="100%"))),
+      tags$div(style = "margin-bottom: 6px;")#,
+      #downloadButton("download_report_html", "Facilitator Report (HTML)", width="100%")
+      )),
     actionButton("run", icon = icon("play"), "Run / Refresh Analysis",
                  class = "btn-primary btn-lg", width = "100%"),
     br(),
