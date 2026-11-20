@@ -195,12 +195,12 @@ ui <- fluidPage(
                uiOutput("question_panel_density"),
                uiOutput("plot_density_ui")),
       
-      tabPanel(tagList(icon("chart-bar"),"Simulated Pooled Estimates"),
-               value="hist",
-               title_card("Simulated Pooled Estimates",
-                          "Monte Carlo draws from the pooled expert distributions."),
-               uiOutput("question_panel_hist"),
-               uiOutput("plot_hist_ui")),
+      #tabPanel(tagList(icon("chart-bar"),"Simulated Pooled Estimates"),
+      #         value="hist",
+      #         title_card("Simulated Pooled Estimates",
+      #                    "Monte Carlo draws from the pooled expert distributions."),
+      #         uiOutput("question_panel_hist"),
+      #         uiOutput("plot_hist_ui")),
       
       tabPanel(tagList(icon("chart-line"),"CDF"),
                title_card("Cumulative Probability",
